@@ -89,6 +89,15 @@ function showView(viewId, title) {
     
     if (title) pageTitle.innerText = title;
 
+    const isLogin = viewId === 'login-view';
+    const sidebar = document.querySelector('.sidebar');
+    const topHeader = document.querySelector('.top-header');
+    const leadSidebar = document.getElementById('leadSidebar');
+
+    if (sidebar) sidebar.style.display = isLogin ? 'none' : 'flex';
+    if (topHeader) topHeader.style.display = isLogin ? 'none' : 'flex';
+    if (leadSidebar) leadSidebar.style.display = isLogin ? 'none' : 'block';
+
     // Toggle FAB visibility
     if (viewId === 'dashboard-view' || viewId === 'leads-view') {
         if (openSidebarBtn) openSidebarBtn.style.display = 'flex';
