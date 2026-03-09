@@ -590,25 +590,36 @@ window.viewLeadDetail = async (id) => {
 
 async function renderTimeline(leadId) {
     notesTimeline.innerHTML = '<p style="color: var(--text-muted); font-size: 0.875rem;">Loading activity...</p>';
-    const { data: activities, success } = await activitiesService.getActivities(leadId);
-    
+    console.log("renderTimeline called for lead:", leadId);
+    const { data: activities, success, error } = await activitiesService.getActivities(leadId);
+    console.log("Activities result:", { success, activities, error });
+
     notesTimeline.innerHTML = '';
     if (!success || !activities || activities.length === 0) {
         notesTimeline.innerHTML = '<p style="color: var(--text-muted); font-size: 0.875rem;">No activity yet.</p>';
         return;
     }
 
-    notesTimeline.innerHTML = activities.map(act => {
+    // Create table
+    const table = document.createElement('table');
+    table.className = 'notes-table';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Timestamp</th><th>User</th><th>Note</th></tr>';
+    const tbody = document.createElement('tbody');
+
+    activities.forEach(act => {
         const dateStr = new Date(act.created_at).toLocaleString('en-IN', {
             day: '2-digit', month: 'short', year: 'numeric',
             hour: '2-digit', minute: '2-digit', hour12: true
         });
-        return `
-        <div class="timeline-item">
-            <div class="timeline-date">${dateStr} - User: ${act.profiles?.full_name || 'System'}</div>
-            <div class="timeline-content">${act.content}</div>
-        </div>
-    `}).join('');
+        const userName = act.profiles?.full_name || 'System';
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${dateStr}</td><td>${userName}</td><td>${act.content}</td>`;
+        tbody.appendChild(row);
+    });
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    notesTimeline.appendChild(table);
 }
 
 addNoteBtn.addEventListener('click', async () => {

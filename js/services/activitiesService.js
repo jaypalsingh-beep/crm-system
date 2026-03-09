@@ -9,12 +9,32 @@ export const activitiesService = {
         try {
             const { data, error } = await supabase
                 .from('lead_activities')
-                .select('*, profiles(full_name)')
+                .select('*')
                 .eq('lead_id', leadId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            return { data, success: true };
+
+            // Resolve user names from profiles
+            const userIds = [...new Set(data.map(a => a.user_id).filter(Boolean))];
+            let profileMap = {};
+            if (userIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', userIds);
+                if (profiles) {
+                    profiles.forEach(p => profileMap[p.id] = p.full_name);
+                }
+            }
+
+            // Attach profile info to each activity
+            const enriched = data.map(a => ({
+                ...a,
+                profiles: { full_name: profileMap[a.user_id] || null }
+            }));
+
+            return { data: enriched, success: true };
         } catch (error) {
             return { error: error.message, success: false };
         }

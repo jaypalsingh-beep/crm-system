@@ -635,52 +635,44 @@ tbody tr:hover td {
 /* Timeline */
 .timeline {
     position: relative;
-    padding-left: 2.5rem;
+    padding-left: 2rem;
+    min-height: 60px;
+    margin-top: 1rem;
 }
 
 .timeline::before {
-    content: '';
-    position: absolute;
-    left: 9px;
-    top: 0;
-    bottom: 0;
+    left: 8px;
     width: 2px;
     background: var(--border);
 }
 
 .timeline-item {
-    position: relative;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
+    padding-left: 1.5rem;
 }
 
 .timeline-item::before {
-    content: '';
-    position: absolute;
-    left: -2.5rem + 1px;
-    /* Center it on the line */
-    left: -2.5rem + 2px;
-    left: -2.35rem;
+    left: -0.5rem;
     top: 4px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
+    width: 12px;
+    height: 12px;
     background: var(--primary);
-    border: 3px solid var(--white);
+    border: 2px solid var(--white);
     box-shadow: 0 0 0 2px var(--primary-dim);
 }
 
 .timeline-date {
-    font-size: 0.8125rem;
-    font-weight: 700;
     color: var(--text-muted);
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
 }
 
 .timeline-content {
     background: var(--bg-main);
-    padding: 1.25rem;
+    padding: 0.75rem 1rem;
     border-radius: var(--radius-m);
     border: 1px solid var(--border);
+    color: var(--text-main);
 }
 
 /* Form Sections */
