@@ -128,6 +128,7 @@ navItems.forEach(item => {
         if (page === 'leads-view') renderLeads();
         if (page === 'users-view') renderUsers();
         if (page === 'settings-view') renderSettings();
+        if (page === 'lead-requests-view') renderLeadRequests();
 
         // Refresh icons after view change
         if (window.lucide) lucide.createIcons();
@@ -287,7 +288,7 @@ function togglePrimaryEventVisibility() {
     const primaryEventGroup = document.getElementById('primaryEventGroup');
     const primaryEventSelect = document.getElementById('primaryEvent');
     
-    if (selectedEvents.length > 1 || (currentUser && currentUser.role === 'Admin')) {
+    if (selectedEvents.length > 1) {
         primaryEventGroup.style.display = 'block';
         primaryEventSelect.required = true;
     } else {
@@ -295,8 +296,12 @@ function togglePrimaryEventVisibility() {
         primaryEventSelect.required = false;
         if (selectedEvents.length === 1) {
             primaryEventSelect.value = selectedEvents[0];
+            // Update assigned to field based on this event
+            const assignedName = currentEventAssignments[selectedEvents[0]];
+            assignToInput.value = assignedName || currentUser?.full_name || currentUser?.email || 'Unassigned';
         } else {
             primaryEventSelect.value = '';
+            assignToInput.value = currentUser?.full_name || currentUser?.email || 'Unassigned';
         }
     }
 }
@@ -412,7 +417,7 @@ document.getElementById('superAdminRoleSwitcher').addEventListener('change', asy
 // --- Auto-Assignment ---
 primaryEventSelect.addEventListener('change', (e) => {
     const event = e.target.value;
-    assignToInput.value = currentEventAssignments[event] || "Unassigned";
+    assignToInput.value = currentEventAssignments[event] || currentUser?.full_name || currentUser?.email || "Unassigned";
 });
 
 // --- Helper: Get Multi-select values ---
@@ -690,78 +695,123 @@ editLeadFromDetailBtn.addEventListener('click', () => {
 leadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const editingId = editingIdInput.value;
-    const phoneInput = document.getElementById('phone').value;
+    try {
+        let editingId = editingIdInput.value;
+        const phoneInput = document.getElementById('phone').value;
 
-    if (!editingId) {
-        // Check for duplicate phone number
-        const { data: existingLead, success: checkSuccess } = await leadsService.getLeadByPhone(phoneInput);
-        if (checkSuccess && existingLead) {
-            showToast("Lead with this number already exists. Redirecting...", "info");
-            closeLeadSidebar();
-            resetForm();
-            viewLeadDetail(existingLead.id);
-            return;
+        if (!editingId) {
+            // Check for duplicate phone number
+            const { data: existingLead, success: checkSuccess } = await leadsService.getLeadByPhone(phoneInput);
+            console.log("Duplicate check:", { existingLead, checkSuccess });
+            if (checkSuccess && existingLead) {
+                const selectedEvents = getMultiSelectValues(eventsContainer);
+                let primaryEventValue = document.getElementById('primaryEvent').value;
+                if (selectedEvents.length === 1) primaryEventValue = selectedEvents[0];
+                if (!primaryEventValue && selectedEvents.length > 0) primaryEventValue = selectedEvents[0];
+
+                const wantRequest = confirm("Lead with this number already exists. Would you like to send a request to Admin to update their event interests?");
+                if (wantRequest) {
+                    const reqObj = {
+                        phone: phoneInput,
+                        events_interested: selectedEvents,
+                        primary_event: primaryEventValue,
+                        requester_id: currentUser.id,
+                        status: 'pending'
+                    };
+                    const reqRes = await leadsService.createLeadRequest(reqObj);
+                    if (reqRes.success) {
+                        showToast("Request sent to Admin!", "success");
+                        resetForm();
+                    } else {
+                        showToast("Error sending request: " + reqRes.error, "error");
+                    }
+                } else {
+                    resetForm();
+                    window.viewLeadDetail(existingLead.id);
+                }
+                return;
+            }
         }
-    }
 
-    const leadData = {
-        full_name: document.getElementById('fullName').value,
-        phone: phoneInput,
-        source: document.getElementById('leadSource').value,
-        events_interested: getMultiSelectValues(eventsContainer),
-        primary_event: document.getElementById('primaryEvent').value,
-        travel_date: document.getElementById('travelDate').value,
-        reasons_to_call: reasonsSelect.value ? [reasonsSelect.value] : [], 
-        status: document.getElementById('participantStatus').value,
-        actions_required: actionsSelect.value ? [actionsSelect.value] : [],
-        assigned_to: null, // Logic below
-        remarks: document.getElementById('remarks').value
-    };
-
-    // Auto-assignment logic if unassigned
-    // Auto-assignment logic
-    const reasonToCall = leadData.reasons_to_call && leadData.reasons_to_call[0];
-    const users = await usersService.getUsers();
-
-    if (reasonToCall === 'Payment/Refund') {
-        const refundManager = users.data.find(u => u.role === 'Refund Manager');
-        if (refundManager) leadData.assigned_to = refundManager.id;
-    } else if (reasonToCall === 'Special Camp') {
-        const specialManager = users.data.find(u => u.role === 'Special Camp Manager');
-        if (specialManager) leadData.assigned_to = specialManager.id;
-    }
-
-    // Fallback to primary event assignment if still unassigned
-    if (!leadData.assigned_to) {
-        const assignmentMap = await usersService.getEventAssignments();
-        const assignedUser = assignmentMap.data[leadData.primary_event];
-        if (assignedUser) {
-            const userObj = users.data.find(u => u.full_name === assignedUser);
-            if (userObj) leadData.assigned_to = userObj.id;
+        // If only 1 event selected, auto-set primary_event
+        const selectedEvents = getMultiSelectValues(eventsContainer);
+        let primaryEventValue = document.getElementById('primaryEvent').value;
+        if (selectedEvents.length === 1) {
+            primaryEventValue = selectedEvents[0];
         }
-    }
 
-    editingId = editingIdInput.value;
-    let result;
+        if (!primaryEventValue && selectedEvents.length > 0) {
+            primaryEventValue = selectedEvents[0];
+        }
 
-    if (editingId) {
-        result = await leadsService.updateLead(editingId, leadData);
-    } else {
-        result = await leadsService.createLead(leadData);
+        const leadData = {
+            full_name: document.getElementById('fullName').value,
+            phone: phoneInput,
+            source: document.getElementById('leadSource').value,
+            events_interested: selectedEvents,
+            primary_event: primaryEventValue,
+            travel_date: document.getElementById('travelDate').value,
+            reasons_to_call: reasonsSelect.value ? [reasonsSelect.value] : [], 
+            status: document.getElementById('participantStatus').value,
+            actions_required: actionsSelect.value ? [actionsSelect.value] : [],
+            assigned_to: null, // Logic below
+            remarks: document.getElementById('remarks').value
+        };
+
+        console.log("Lead data to save:", leadData);
+
+        // Auto-assignment logic
+        const reasonToCall = leadData.reasons_to_call && leadData.reasons_to_call[0];
+        const users = await usersService.getUsers();
+
+        if (reasonToCall === 'Payment/Refund') {
+            const refundManager = users.data.find(u => u.role === 'Refund Manager');
+            if (refundManager) leadData.assigned_to = refundManager.id;
+        } else if (reasonToCall === 'Special Camp') {
+            const specialManager = users.data.find(u => u.role === 'Special Camp Manager');
+            if (specialManager) leadData.assigned_to = specialManager.id;
+        }
+
+        // Fallback to primary event assignment if still unassigned
+        if (!leadData.assigned_to) {
+            const assignmentMap = await usersService.getEventAssignments();
+            const assignedUser = assignmentMap.data[leadData.primary_event];
+            if (assignedUser) {
+                const userObj = users.data.find(u => u.full_name === assignedUser);
+                if (userObj) leadData.assigned_to = userObj.id;
+            }
+        }
+
+        // Final fallback: assign to current user (admin) if still unassigned
+        if (!leadData.assigned_to && currentUser) {
+            leadData.assigned_to = currentUser.id;
+        }
+
+        console.log("Final lead data:", leadData);
+        let result;
+
+        if (editingId) {
+            result = await leadsService.updateLead(editingId, leadData);
+        } else {
+            result = await leadsService.createLead(leadData);
+            if (result.success) {
+                await activitiesService.addActivity(result.data.id, 'status_change', `Lead created with status "${leadData.status}"`);
+            }
+        }
+
+        console.log("Save result:", result);
+
         if (result.success) {
-            await activitiesService.addActivity(result.data.id, 'status_change', `Lead created with status "${leadData.status}"`);
+            showToast(`Inquiry ${editingId ? 'updated' : 'created'} successfully!`, "success");
+            resetForm();
+            renderDashboard();
+            renderLeads();
+        } else {
+            showToast("Error saving inquiry: " + result.error, "error");
         }
-    }
-
-    if (result.success) {
-        showToast(`Inquiry ${editingId ? 'updated' : 'created'} successfully!`, "success");
-        closeLeadSidebar();
-        resetForm();
-        renderDashboard();
-        renderLeads();
-    } else {
-        showToast("Error saving inquiry: " + result.error, "error");
+    } catch (err) {
+        console.error("Form submission error:", err);
+        showToast("Error: " + err.message, "error");
     }
 });
 
@@ -1037,6 +1087,71 @@ window.deleteOption = async (type, value) => {
 };
 
 clearUserBtn.addEventListener('click', resetUserForm);
+
+// --- Lead Requests Management ---
+async function renderLeadRequests() {
+    const container = document.getElementById('leadRequestsTableBody');
+    if (!container) return;
+    
+    container.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading requests...</td></tr>';
+    const { data: requests, success } = await leadsService.getLeadRequests();
+    
+    if (!success || !requests || requests.length === 0) {
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center;">No pending requests found.</td></tr>';
+        return;
+    }
+    
+    container.innerHTML = requests.map(req => {
+        const date = new Date(req.created_at).toLocaleDateString('en-IN');
+        const events = Array.isArray(req.events_interested) ? req.events_interested.join(', ') : req.events_interested;
+        
+        return `
+            <tr>
+                <td>${date}</td>
+                <td>${req.phone}</td>
+                <td>${events}</td>
+                <td>${req.primary_event}</td>
+                <td>${req.requester_id === currentUser.id ? 'You' : 'Another User'}</td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.phone}', ${JSON.stringify(req.events_interested).replace(/"/g, '&quot;')}, '${req.primary_event}')">Approve</button>
+                        <button class="btn btn-secondary btn-sm" style="background: var(--error); color: white;" onclick="rejectRequest('${req.id}')">Reject</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.approveRequest = async (id, phone, events, primaryEvent) => {
+    if (!confirm("Are you sure you want to approve this change?")) return;
+    
+    const updates = {
+        phone: phone,
+        events_interested: events,
+        primary_event: primaryEvent
+    };
+    
+    const res = await leadsService.approveLeadRequest(id, updates);
+    if (res.success) {
+        showToast("Request approved and lead updated!");
+        renderLeadRequests();
+    } else {
+        showToast("Error approving request: " + res.error, "error");
+    }
+};
+
+window.rejectRequest = async (id) => {
+    if (!confirm("Are you sure you want to reject this request?")) return;
+    
+    const res = await leadsService.rejectLeadRequest(id);
+    if (res.success) {
+        showToast("Request rejected.");
+        renderLeadRequests();
+    } else {
+        showToast("Error rejecting request: " + res.error, "error");
+    }
+};
 
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {

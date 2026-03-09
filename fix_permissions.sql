@@ -81,3 +81,27 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
 GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- 8. Lead Requests
+CREATE TABLE IF NOT EXISTS lead_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    phone TEXT NOT NULL,
+    events_interested JSONB,
+    primary_event TEXT,
+    requester_id UUID REFERENCES profiles(id),
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE lead_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can create lead requests" ON lead_requests;
+CREATE POLICY "Users can create lead requests" ON lead_requests FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can view lead requests" ON lead_requests;
+CREATE POLICY "Admins can view lead requests" ON lead_requests FOR SELECT 
+USING (get_my_role() = 'Admin');
+
+DROP POLICY IF EXISTS "Admins can update lead requests" ON lead_requests;
+CREATE POLICY "Admins can update lead requests" ON lead_requests FOR UPDATE 
+USING (get_my_role() = 'Admin');

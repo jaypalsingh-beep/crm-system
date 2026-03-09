@@ -6,6 +6,74 @@ import { supabase } from '../supabaseClient.js';
  */
 export const leadsService = {
     /**
+     * Create a lead request when a duplicate phone is entered.
+     * @param {Object} requestData - { phone, events_interested, primary_event, requester_id }
+     */
+    async createLeadRequest(requestData) {
+        try {
+            const { data, error } = await supabase
+                .from('lead_requests')
+                .insert([requestData])
+                .select();
+            if (error) throw error;
+            return { data: data[0], success: true };
+        } catch (err) {
+            return { error: err.message, success: false };
+        }
+    },
+
+    /** Fetch all pending lead requests */
+    async getLeadRequests() {
+        try {
+            const { data, error } = await supabase
+                .from('lead_requests')
+                .select('*')
+                .eq('status', 'pending');
+            if (error) throw error;
+            return { data, success: true };
+        } catch (err) {
+            return { error: err.message, success: false };
+        }
+    },
+
+    /** Approve a lead request: update the lead and mark request as approved */
+    async approveLeadRequest(requestId, leadUpdates) {
+        try {
+            // Update lead
+            const { data: lead, error: leadErr } = await supabase
+                .from('leads')
+                .update(leadUpdates)
+                .eq('phone', leadUpdates.phone)
+                .single();
+            if (leadErr) throw leadErr;
+            // Update request status
+            const { data: req, error: reqErr } = await supabase
+                .from('lead_requests')
+                .update({ status: 'approved' })
+                .eq('id', requestId)
+                .single();
+            if (reqErr) throw reqErr;
+            return { data: { lead, request: req }, success: true };
+        } catch (err) {
+            return { error: err.message, success: false };
+        }
+    },
+
+    /** Reject a lead request */
+    async rejectLeadRequest(requestId) {
+        try {
+            const { data, error } = await supabase
+                .from('lead_requests')
+                .update({ status: 'rejected' })
+                .eq('id', requestId)
+                .single();
+            if (error) throw error;
+            return { data, success: true };
+        } catch (err) {
+            return { error: err.message, success: false };
+        }
+    },
+    /**
      * Fetch leads with advanced filtering
      * @param {Object} filters - status, assigned_to, primary_event, date_from, date_to, search
      */
@@ -98,6 +166,21 @@ export const leadsService = {
 
             if (error) throw error;
             return { success: true };
+        } catch (error) {
+            return { error: error.message, success: false };
+        }
+    },
+
+    async getLeadByPhone(phone) {
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('*')
+                .eq('phone', phone)
+                .maybeSingle();
+
+            if (error) throw error;
+            return { data, success: true };
         } catch (error) {
             return { error: error.message, success: false };
         }

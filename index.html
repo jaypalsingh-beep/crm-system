@@ -35,6 +35,9 @@
                     <li class="nav-item" data-page="reports-view">
                         <i data-lucide="bar-chart-3" class="nav-icon"></i> <span>Insights</span>
                     </li>
+                    <li class="nav-item" data-page="lead-requests-view" id="nav-requests">
+                        <i data-lucide="clipboard-list" class="nav-icon"></i> <span>Lead Requests</span>
+                    </li>
                     <li class="nav-item" data-page="settings-view" id="nav-settings">
                         <i data-lucide="settings" class="nav-icon"></i> <span>Field Configuration</span>
                     </li>
@@ -156,6 +159,32 @@
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <!-- Lead Requests View -->
+                <div id="lead-requests-view" class="view-section">
+                    <section class="card table-card">
+                        <div class="table-header">
+                            <h2>Lead Requests</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Phone</th>
+                                        <th>Requested Events</th>
+                                        <th>Primary Event</th>
+                                        <th>Requester</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leadRequestsTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Leads View -->
@@ -567,6 +596,6 @@
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
-    <script type="module" src="app.js?v=7"></script>
+    <script type="module" src="app.js?v=8"></script>
 </body>
 </html>
