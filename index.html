@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Pro | SaaS Lead Management</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i data-lucide="layers" class="brand-icon"></i>
+                <h2>CRM Pro</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-page="dashboard-view">
+                        <i data-lucide="layout-dashboard" class="nav-icon"></i> <span>Dashboard</span>
+                    </li>
+                    <li class="nav-item" data-page="leads-view">
+                        <i data-lucide="users" class="nav-icon"></i> <span>Leads</span>
+                    </li>
+                    <li class="nav-item" data-page="users-view" id="nav-team">
+                        <i data-lucide="user-plus" class="nav-icon"></i> <span>Team & Assignments</span>
+                    </li>
+                    <li class="nav-item" data-page="reports-view">
+                        <i data-lucide="bar-chart-3" class="nav-icon"></i> <span>Insights</span>
+                    </li>
+                    <li class="nav-item" data-page="settings-view" id="nav-settings">
+                        <i data-lucide="settings" class="nav-icon"></i> <span>Field Configuration</span>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div id="roleSwitcherContainer" style="display: none; align-items: center; gap: 0.5rem; margin-right: 1.5rem; background: var(--primary-dim); padding: 0.4rem 0.8rem; border-radius: 100px; border: 1px solid var(--primary-light);">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">View As:</span>
+                        <select id="superAdminRoleSwitcher" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; border: none; background: transparent; font-weight: 700; color: var(--primary); cursor: pointer; outline: none;">
+                            <option value="Admin">Admin</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Executive">Executive</option>
+                            <option value="Refund Manager">Refund Manager</option>
+                            <option value="Special Camp Manager">Special Camp Manager</option>
+                        </select>
+                    </div>
+                    <div id="authStatus" style="margin-right: 1rem; font-size: 0.85rem; font-weight: 600; color: var(--md-primary);">
+                        <!-- Dynamic -->
+                    </div>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm" style="margin-right: 1rem; display: none;">Logout</button>
+                    <div class="user-profile">
+                        <span class="user-name" id="currentUserDisplayName">Admin User</span>
+                        <div class="user-avatar" id="currentUserAvatar">AD</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- View Sections -->
+            <div class="content-area">
+                
+                <!-- Login View -->
+                <div id="login-view" class="view-section active">
+                    <div style="max-width: 440px; margin: 6rem auto; text-align: center;">
+                        <div class="card login-card" style="padding: 3.5rem;">
+                            <div class="login-header" style="margin-bottom: 2.5rem;">
+                                <div class="brand-icon-large" style="width: 64px; height: 64px; background: var(--primary-light); color: var(--primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                                    <i data-lucide="layers" style="width: 32px; height: 32px;"></i>
+                                </div>
+                                <h2 style="margin-bottom: 0.5rem; justify-content: center;">Welcome Back</h2>
+                                <p style="color: var(--text-muted); font-size: 0.9375rem;">Enter your credentials to access the CRM</p>
+                            </div>
+                            <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.25rem; text-align: left;">
+                                <div class="form-group">
+                                    <label for="loginEmail">Email Address</label>
+                                    <div style="position: relative;">
+                                        <i data-lucide="mail" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-light);"></i>
+                                        <input type="email" id="loginEmail" required placeholder="name@company.com" style="padding-left: 3rem; width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="loginPassword">Password</label>
+                                    <div style="position: relative;">
+                                        <i data-lucide="lock" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-light);"></i>
+                                        <input type="password" id="loginPassword" required placeholder="••••••••" style="padding-left: 3rem; width: 100%;">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
+                                    <span>Sign In</span>
+                                    <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                                </button>
+                            </form>
+                            <p id="loginError" style="margin-top: 1.5rem; color: var(--error); font-size: 0.875rem; padding: 0.75rem; background: var(--error-bg); border-radius: 8px; display: none;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view-section active">
+                    <div class="summary-grid" id="analyticsDashboard">
+                        <!-- Cards added via JS -->
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="card">
+                            <h2>Leads by Event</h2>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead><tr><th>Event</th><th>Count</th></tr></thead>
+                                    <tbody id="eventAnalyticsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h2>Leads by User</h2>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead><tr><th>User</th><th>Active Leads</th></tr></thead>
+                                    <tbody id="userAnalyticsBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card recent-activity">
+                        <h2>Recent Inquiries</h2>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Name</th>
+                                        <th>Primary Event</th>
+                                        <th>Participant Status</th>
+                                        <th>Assigned To</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentLeadsTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leads View -->
+                <div id="leads-view" class="view-section">
+                    <section class="card table-card">
+                        <div class="table-header">
+                            <h2>Inquiries List</h2>
+                            <div class="table-controls">
+                                <div class="filter-bar">
+                                    <div class="filter-group">
+                                        <label>Search:</label>
+                                        <div class="search-box">
+                                            <input type="text" id="searchInput" placeholder="Search name, phone, event...">
+                                        </div>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>Status:</label>
+                                        <select id="statusFilter">
+                                            <option value="All">All Status</option>
+                                            <option value="New Inquiry">New Inquiry</option>
+                                            <option value="Interested">Interested</option>
+                                            <option value="Considering">Considering</option>
+                                            <option value="Follow-up Needed">Follow-up Needed</option>
+                                            <option value="Ready to Book">Ready to Book</option>
+                                            <option value="Booked">Booked</option>
+                                            <option value="Not Interested">Not Interested</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>From:</label>
+                                        <input type="date" id="dateFromFilter">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>To:</label>
+                                        <input type="date" id="dateToFilter">
+                                    </div>
+                                    <button id="clearFiltersBtn" class="btn btn-secondary" style="margin-left: auto;">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Source</th>
+                                        <th>Primary Event</th>
+                                        <th>Travel Date</th>
+                                        <th>Participant Status</th>
+                                        <th>Assigned To</th>
+                                        <th>Action Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leadsTableBody">
+                                    <!-- Leads will be dynamically added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Lead Details View -->
+                <div id="lead-details-view" class="view-section">
+                    <div class="view-header">
+                        <button id="backToLeadsBtn" class="btn btn-secondary">← Back to Leads</button>
+                    </div>
+                    
+                    <div class="details-grid">
+                        <div class="details-main">
+                            <section class="card detail-card">
+                                <div class="detail-header">
+                                    <h2 id="detailFullName">Lead Name</h2>
+                                    <div id="detailStatusBadge" class="badge">Status</div>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Lead Source</label>
+                                        <p id="detailSource">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Phone</label>
+                                        <p id="detailPhone">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Events Interested</label>
+                                        <p id="detailEvents">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Primary Event</label>
+                                        <p id="detailPrimaryEvent">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Tentative Travel Date</label>
+                                        <p id="detailTravelDate">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Reason to Call</label>
+                                        <p id="detailReasons">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Assigned To</label>
+                                        <p id="detailAssigned">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Participant Status</label>
+                                        <p id="detailParticipantStatus">-</p>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Created Date</label>
+                                        <p id="detailCreatedDate">-</p>
+                                    </div>
+                                    <div class="info-item full-width">
+                                        <label>Action Required</label>
+                                        <p id="detailActionsRequired">-</p>
+                                    </div>
+                                    <div class="info-item full-width">
+                                        <label>Remarks</label>
+                                        <p id="detailRemarks">-</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="card notes-activity">
+                                <h2>Notes & Activity</h2>
+                                <div class="add-note-box">
+                                    <textarea id="newNoteText" placeholder="Add a note or update..."></textarea>
+                                    <button id="addNoteBtn" class="btn btn-primary">Add Note</button>
+                                </div>
+                                <div id="notesTimeline" class="timeline">
+                                    <!-- Notes will appear here -->
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="details-side">
+                            <section class="card quick-actions">
+                                <h2>Quick Actions</h2>
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label>Change Status</label>
+                                    <select id="detailStatusSelect">
+                                        <option value="New Inquiry">New Inquiry</option>
+                                        <option value="Interested">Interested</option>
+                                        <option value="Considering">Considering</option>
+                                        <option value="Follow-up Needed">Follow-up Needed</option>
+                                        <option value="Ready to Book">Ready to Book</option>
+                                        <option value="Booked">Booked</option>
+                                        <option value="Not Interested">Not Interested</option>
+                                    </select>
+                                </div>
+                                <button id="editLeadFromDetailBtn" class="btn btn-primary" style="width: 100%;">Edit Lead Details</button>
+                                <button id="resolveIssueBtn" class="btn btn-success" style="width: 100%; margin-top: 0.75rem; display: none;">Resolve Issue</button>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management View -->
+                <div id="users-view" class="view-section">
+                    <section class="card form-card">
+                        <h2 id="userFormTitle">Add New User</h2>
+                        <form id="userForm">
+                            <input type="hidden" id="editingUserId">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="userName">Full Name</label>
+                                    <input type="text" id="userName" required placeholder="Full Name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="userEmail">Email ID</label>
+                                    <input type="email" id="userEmail" required placeholder="user@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="userRole">User Role</label>
+                                    <select id="userRole" required>
+                                        <option value="Admin">Admin</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Executive">Call Center Executive</option>
+                                        <option value="Refund Manager">Refund Manager</option>
+                                        <option value="Special Camp Manager">Special Camp Manager</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Event Incharge (Assigned Events)</label>
+                                    <div class="multi-select-container" id="userEventsContainer">
+                                        <div class="multi-select-search">
+                                            <input type="text" placeholder="Search events..." class="inner-search-input">
+                                        </div>
+                                        <div class="checkbox-list">
+                                            <!-- Dynamic -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userPassword">Login Password</label>
+                                    <input type="text" id="userPassword" placeholder="Specify or auto-generate">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" id="userSubmitBtn" class="btn btn-primary">Save User</button>
+                                <button type="button" id="clearUserBtn" class="btn btn-secondary">Clear</button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="card table-card">
+                        <div class="table-header">
+                            <h2>Team Management</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name & Email</th>
+                                        <th>Role</th>
+                                        <th>Assigned Events</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Users populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+                <div id="reports-view" class="view-section">
+                    <div class="card"><h2>Reports</h2><p>Coming soon...</p></div>
+                </div>
+                <div id="settings-view" class="view-section">
+                    <div class="dashboard-header-alt" style="margin-bottom: 2rem;">
+                        <h2>Form Configuration</h2>
+                        <p>Manage inquiry form fields and available options.</p>
+                    </div>
+
+                    <div class="settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+                        <!-- Events Settings -->
+                        <div class="card settings-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Event Options</h3>
+                                <button class="btn btn-primary btn-sm" onclick="showAddOption('events')">Add Event</button>
+                            </div>
+                            <div class="settings-list" id="settings-events-list">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+
+                        <!-- Sources Settings -->
+                        <div class="card settings-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Lead Sources</h3>
+                                <button class="btn btn-primary btn-sm" onclick="showAddOption('sources')">Add Source</button>
+                            </div>
+                            <div class="settings-list" id="settings-sources-list">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+
+                        <!-- Reasons Settings -->
+                        <div class="card settings-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Reasons to Call</h3>
+                                <button class="btn btn-primary btn-sm" onclick="showAddOption('reasons')">Add Reason</button>
+                            </div>
+                            <div class="settings-list" id="settings-reasons-list">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+
+                        <!-- Actions Settings -->
+                        <div class="card settings-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Actions Required</h3>
+                                <button class="btn btn-primary btn-sm" onclick="showAddOption('actions')">Add Action</button>
+                            </div>
+                            <div class="settings-list" id="settings-actions-list">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+
+                        <!-- Status Settings -->
+                        <div class="card settings-card">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3>Participant Status Options</h3>
+                                <button class="btn btn-primary btn-sm" onclick="showAddOption('statuses')">Add Status</button>
+                            </div>
+                            <div class="settings-list" id="settings-statuses-list">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar (Lead Form) -->
+        <aside class="glass-sidebar" id="leadSidebar">
+            <h2 id="formTitle">New Inquiry</h2>
+            <p style="margin-bottom: 1.5rem; color: var(--md-on-surface-variant); font-size: 0.9rem;">Fill in the details to create or update an inquiry record.</p>
+            
+            <form id="leadForm">
+            <input type="hidden" id="editingId">
+            <div style="display: flex; flex-direction: column; gap: 0rem;">
+                <!-- Section: Lead Info -->
+                <div class="form-section">
+                    <h3><i data-lucide="user"></i> Lead Information</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="leadSource">Lead Source</label>
+                            <select id="leadSource" required>
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" required placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" required placeholder="Enter phone number">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Event Details -->
+                <div class="form-section">
+                    <h3><i data-lucide="map-pin"></i> Event Details</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div class="form-group">
+                            <label>Events Interested In</label>
+                            <div class="multi-select-container" id="eventsInterestedContainer">
+                                <div class="multi-select-search">
+                                    <i data-lucide="search" style="width: 16px; color: var(--text-muted); margin-left: 0.5rem;"></i>
+                                    <input type="text" placeholder="Search events..." class="inner-search-input">
+                                </div>
+                                <div class="checkbox-list">
+                                    <!-- Dynamic -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" id="primaryEventGroup" style="display: none;">
+                            <label for="primaryEvent">Primary Event</label>
+                            <select id="primaryEvent" required>
+                                <option value="" disabled selected>Select Primary Event</option>
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="travelDate">Tentative Travel Date</label>
+                            <input type="date" id="travelDate" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Engagement -->
+                <div class="form-section">
+                    <h3><i data-lucide="message-square"></i> Engagement</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="reasonsSelection">Reason to Call</label>
+                            <select id="reasonsSelection" required>
+                                <option value="" disabled selected>Select Reason</option>
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="actionsRequired">Action Required</label>
+                            <select id="actionsRequired" required>
+                                <option value="" disabled selected>Select Action</option>
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="participantStatus">Current Participant Status</label>
+                            <select id="participantStatus" required>
+                                <option value="" disabled selected>Select Status</option>
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Admin & Remarks -->
+                <div class="form-section">
+                    <h3><i data-lucide="clipboard"></i> Admin & Remarks</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="assignTo">Assigned To</label>
+                            <input type="text" id="assignTo" readonly placeholder="Auto-assigned" style="background-color: rgba(255,255,255,0.5);">
+                        </div>
+                        <div class="form-group">
+                            <label for="remarks">Remarks</label>
+                            <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 2rem; flex-direction: column; gap: 0.75rem;">
+                <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%;">Save Inquiry</button>
+                <button type="button" id="clearBtn" class="btn btn-secondary" style="width: 100%;">Clear Form</button>
+                <button type="button" id="cancelEditBtn" class="btn btn-secondary" style="display: none; width: 100%;">Cancel Edit</button>
+            </div>
+        </form>
+        </aside>
+    </div>
+
+    <!-- Floating Action Button -->
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script type="module" src="app.js?v=6"></script>
+</body>
+</html>

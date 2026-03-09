@@ -1,0 +1,12 @@
+{
+  "name": "crm-frontend",
+  "version": "1.0.0",
+  "description": "Basic Lead Management CRM Frontend",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -o"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
