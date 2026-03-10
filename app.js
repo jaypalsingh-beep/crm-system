@@ -124,28 +124,33 @@ if (mobileMenuBtn) {
 }
 
 // --- Auth Logic ---
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    loginError.style.display = 'none';
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    console.log("Attempting sign in for:", email);
-    const { data, error, success } = await authService.signIn(email, password);
-    console.log("Sign in result:", { success, error });
-    if (success) {
-        showToast("Login successful!", "success");
-        await checkAuth();
-    } else {
-        showToast(error, "error");
-        loginError.innerText = error;
-        loginError.style.display = 'block';
-    }
-});
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loginError.style.display = 'none';
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        console.log("Attempting sign in for:", email);
+        const { data, error, success } = await authService.signIn(email, password);
+        console.log("Sign in result:", { success, error });
+        if (success) {
+            showToast("Login successful!", "success");
+            await checkAuth();
+        } else {
+            showToast(error, "error");
+            loginError.innerText = error;
+            loginError.style.display = 'block';
+        }
+    });
+}
 
-logoutBtn.addEventListener('click', async () => {
-    await authService.signOut();
-    location.reload(); // Simplest way to reset state
-});
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        await authService.signOut();
+        location.reload(); // Simplest way to reset state
+    });
+}
 
 async function checkAuth() {
     console.log("Checking auth state...");
@@ -404,27 +409,36 @@ function applyPermissions() {
 }
 
 // Superadmin Role Switcher Event
-document.getElementById('superAdminRoleSwitcher').addEventListener('change', async () => {
-    applyPermissions();
-    showToast("UI View updated to " + document.getElementById('superAdminRoleSwitcher').value, "info");
-    
-    // Refresh current view structure & data
-    const activeView = document.querySelector('.view-section.active');
-    if (activeView) {
-        if (activeView.id === 'dashboard-view') await renderDashboard();
-        if (activeView.id === 'leads-view') await renderLeads();
-        if (activeView.id === 'settings-view') await renderSettings();
-    }
-    
-    // Ensure icons are refreshed for new elements
-    if (window.lucide) lucide.createIcons();
-});
+const roleSwitcher = document.getElementById('superAdminRoleSwitcher');
+if (roleSwitcher) {
+    roleSwitcher.addEventListener('change', async () => {
+        applyPermissions();
+        showToast("UI View updated to " + document.getElementById('superAdminRoleSwitcher').value, "info");
+        
+        // Refresh current view structure & data
+        const activeView = document.querySelector('.view-section.active');
+        if (activeView) {
+            if (activeView.id === 'dashboard-view') await renderDashboard();
+            if (activeView.id === 'leads-view') await renderLeads();
+            if (activeView.id === 'settings-view') await renderSettings();
+        }
+        
+        // Ensure icons are refreshed for new elements
+        if (window.lucide) lucide.createIcons();
+    });
+}
 
 // --- Auto-Assignment ---
-primaryEventSelect.addEventListener('change', (e) => {
-    const event = e.target.value;
-    assignToInput.value = currentEventAssignments[event] || currentUser?.full_name || currentUser?.email || "Unassigned";
-});
+const primaryEventSelectGlobal = document.getElementById('primaryEvent');
+if (primaryEventSelectGlobal) {
+    primaryEventSelectGlobal.addEventListener('change', (e) => {
+        const event = e.target.value;
+        const assignToInput = document.getElementById('assignTo');
+        if (assignToInput) {
+            assignToInput.value = currentEventAssignments[event] || currentUser?.full_name || currentUser?.email || "Unassigned";
+        }
+    });
+}
 
 // --- Helper: Get Multi-select values ---
 function getMultiSelectValues(container) {
@@ -671,19 +685,21 @@ async function renderTimeline(leadId) {
     notesTimeline.appendChild(table);
 }
 
-addNoteBtn.addEventListener('click', async () => {
-    const text = newNoteText.value.trim();
-    if (!text || !currentViewingLeadId) return;
+if (addNoteBtn) {
+    addNoteBtn.addEventListener('click', async () => {
+        const text = newNoteText.value.trim();
+        if (!text || !currentViewingLeadId) return;
 
-    const { success } = await activitiesService.addActivity(currentViewingLeadId, 'note', text);
-    if (success) {
-        showToast("Note added successfully!");
-        newNoteText.value = '';
-        await renderTimeline(currentViewingLeadId);
-    } else {
-        showToast("Error adding note", "error");
-    }
-});
+        const { success } = await activitiesService.addActivity(currentViewingLeadId, 'note', text);
+        if (success) {
+            showToast("Note added successfully!");
+            newNoteText.value = '';
+            await renderTimeline(currentViewingLeadId);
+        } else {
+            showToast("Error adding note", "error");
+        }
+    });
+}
 
 
 if (detailStatusSelect) {
@@ -841,43 +857,45 @@ function generatePassword() {
     return pass;
 }
 
-userForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('userName').value;
-    const email = document.getElementById('userEmail').value;
-    const role = userRoleInput.value;
-    const assignedEvents = getMultiSelectValues(userEventsContainer);
-    const editingId = editingUserIdInput.value;
+if (userForm) {
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('userName').value;
+        const email = document.getElementById('userEmail').value;
+        const role = userRoleInput.value;
+        const assignedEvents = getMultiSelectValues(userEventsContainer);
+        const editingId = editingUserIdInput.value;
 
-    const generatedPass = document.getElementById('userPassword').value || generatePassword();
+        const generatedPass = document.getElementById('userPassword').value || generatePassword();
 
-    let result;
-    if (editingId) {
-        result = await usersService.updateProfile(editingId, { full_name: name, role });
-        if (result.success) {
-            await usersService.saveEventAssignments(editingId, assignedEvents);
-            showToast("User updated successfully!");
-        }
-    } else {
-        // Direct User Creation
-        const signupRes = await authService.signUp(email, generatedPass, { full_name: name, role });
-        if (signupRes.success) {
-            const newUser = signupRes.data.user;
-            await usersService.saveEventAssignments(newUser.id, assignedEvents);
-            showToast("User created successfully!", "success");
-            result = { success: true };
+        let result;
+        if (editingId) {
+            result = await usersService.updateProfile(editingId, { full_name: name, role });
+            if (result.success) {
+                await usersService.saveEventAssignments(editingId, assignedEvents);
+                showToast("User updated successfully!");
+            }
         } else {
-            showToast("Signup failed: " + signupRes.error, "error");
-            return;
+            // Direct User Creation
+            const signupRes = await authService.signUp(email, generatedPass, { full_name: name, role });
+            if (signupRes.success) {
+                const newUser = signupRes.data.user;
+                await usersService.saveEventAssignments(newUser.id, assignedEvents);
+                showToast("User created successfully!", "success");
+                result = { success: true };
+            } else {
+                showToast("Signup failed: " + signupRes.error, "error");
+                return;
+            }
         }
-    }
 
-    if (result && result.success) {
-        resetUserForm();
-        await renderUsers();
-        await loadInitialData(); // Refresh assignments map
-    }
-});
+        if (result && result.success) {
+            resetUserForm();
+            await renderUsers();
+            await loadInitialData(); // Refresh assignments map
+        }
+    });
+}
 
 window.deleteUser = async (id) => {
     if (!confirm("Are you sure you want to delete this user profile? This won't delete their Auth account but will remove their association with leads and events.")) return;
@@ -983,7 +1001,9 @@ window.deleteOption = async (type, value) => {
     }
 };
 
-clearUserBtn.addEventListener('click', resetUserForm);
+if (clearUserBtn) {
+    clearUserBtn.addEventListener('click', resetUserForm);
+}
 
 // --- Lead Requests Management ---
 async function renderLeadRequests() {
