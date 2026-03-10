@@ -81,7 +81,7 @@ export const leadsService = {
         try {
             let query = supabase
                 .from('leads')
-                .select('*, profiles!leads_assigned_to_fkey(full_name)');
+                .select('*, profiles:assigned_to (full_name)');
 
             if (filters.status && filters.status !== 'All') {
                 query = query.eq('status', filters.status);
@@ -117,7 +117,7 @@ export const leadsService = {
         try {
             const { data, error } = await supabase
                 .from('leads')
-                .select('*, profiles!leads_assigned_to_fkey(full_name)')
+                .select('*, profiles:assigned_to (full_name)')
                 .eq('id', id)
                 .single();
 
