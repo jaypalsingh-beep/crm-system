@@ -121,7 +121,6 @@ const loginView = document.getElementById('login-view');
 const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
-const authStatus = document.getElementById('authStatus');
 
 // --- Navigation Listeners ---
 navItems.forEach(item => {
@@ -136,10 +135,22 @@ navItems.forEach(item => {
         if (page === 'settings-view') renderSettings();
         if (page === 'lead-requests-view') renderLeadRequests();
 
+        // Close mobile menu if open
+        const sidebarNav = document.querySelector('.sidebar-nav');
+        if (sidebarNav) sidebarNav.classList.remove('active');
+        
         // Refresh icons after view change
         if (window.lucide) lucide.createIcons();
     });
 });
+
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', () => {
+        const sidebarNav = document.querySelector('.sidebar-nav');
+        if (sidebarNav) sidebarNav.classList.toggle('active');
+    });
+}
 
 // --- Auth Logic ---
 loginForm.addEventListener('submit', async (e) => {
@@ -177,7 +188,6 @@ async function checkAuth() {
         applyPermissions();
         loginView.classList.remove('active');
         logoutBtn.style.display = 'block';
-        authStatus.innerText = `Logged in as ${user.full_name || user.email}`;
         
         // Initial Data Loads
         await loadInitialData();
