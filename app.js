@@ -22,6 +22,7 @@ const pageTitle = document.getElementById('pageTitle');
 const leadForm = document.getElementById('leadForm');
 const leadsTableBody = document.getElementById('leadsTableBody');
 const recentLeadsTableBody = document.getElementById('recentLeadsTableBody');
+const staleLeadsTableBody = document.getElementById('staleLeadsTableBody');
 const clearBtn = document.getElementById('clearBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const formTitle = document.getElementById('formTitle');
@@ -58,6 +59,11 @@ const leadSidebar = document.getElementById('leadSidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const openSidebarBtn = document.getElementById('openSidebarBtn');
 const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+// Bulk Import Elements
+const bulkImportBtn = document.getElementById('bulkImportBtn');
+const bulkImportInput = document.getElementById('bulkImportInput');
+const downloadSampleBtn = document.getElementById('downloadSampleBtn');
 const dateFromFilter = document.getElementById('dateFromFilter');
 const dateToFilter = document.getElementById('dateToFilter');
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
@@ -356,17 +362,25 @@ function applyPermissions() {
 
     // Sidebar items
     const navTeam = document.getElementById('nav-team');
+    const navRequests = document.getElementById('nav-requests');
     const navSettings = document.getElementById('nav-settings');
 
     // Reset visibility
     if (navTeam) navTeam.style.display = 'flex';
+    if (navRequests) navRequests.style.display = 'flex';
     if (navSettings) navSettings.style.display = 'flex';
+
+    // Bulk Import toggle
+    if (bulkImportBtn) bulkImportBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
+    if (downloadSampleBtn) downloadSampleBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
 
     // Hide based on role (allowing preview for Superadmin)
     if (effectiveRole === 'Executive') {
         if (navTeam) navTeam.style.display = 'none';
+        if (navRequests) navRequests.style.display = 'none';
         if (navSettings) navSettings.style.display = 'none';
     } else if (effectiveRole === 'Manager') {
+        if (navRequests) navRequests.style.display = 'none';
         if (navSettings) navSettings.style.display = 'none';
     }
 
@@ -497,6 +511,34 @@ window.renderDashboard = async () => {
             <td>${lead.profiles?.full_name || 'Unassigned'}</td>
         </tr>
     `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem;">No inquiries found</td></tr>';
+
+    // Stale Inquiries Logic (No update in 3 days)
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const staleLeads = leads.filter(l => {
+        const lastUpdate = new Date(l.updated_at || l.created_at);
+        // exclude won/lost/resolved leads from being "stale"
+        const isActive = !['Booked', 'Payment Done', 'Not Interested', 'Resolved', 'Camp Completed'].includes(l.status);
+        return isActive && lastUpdate < threeDaysAgo;
+    }).sort((a,b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at));
+
+    if (staleLeadsTableBody) {
+        staleLeadsTableBody.innerHTML = staleLeads.map(lead => {
+            const lastUpdate = new Date(lead.updated_at || lead.created_at);
+            const daysDiff = Math.floor((new Date() - lastUpdate) / (1000 * 60 * 60 * 24));
+            
+            return `
+                <tr onclick="viewLeadDetail(${lead.id})" style="background: rgba(255, 0, 0, 0.02);">
+                    <td style="color: var(--error); font-weight: 500;">${daysDiff} days ago</td>
+                    <td><strong>${lead.full_name}</strong></td>
+                    <td>${lead.phone}</td>
+                    <td><span class="badge ${getStatusClass(lead.status)}">${lead.status}</span></td>
+                    <td>${lead.profiles?.full_name || 'Unassigned'}</td>
+                </tr>
+            `;
+        }).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No stale inquiries found. Good job!</td></tr>';
+    }
 
     // Event Analytics
     const eventStats = {};
@@ -1152,6 +1194,114 @@ window.rejectRequest = async (id) => {
         showToast("Error rejecting request: " + res.error, "error");
     }
 };
+
+// --- Bulk Import ---
+if (bulkImportBtn) {
+    bulkImportBtn.addEventListener('click', () => {
+        bulkImportInput.click();
+    });
+}
+
+if (bulkImportInput) {
+    bulkImportInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const csv = event.target.result;
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            // Expected headers: name, phone, source, primary_event, travel_date, remarks
+            let successCount = 0;
+            let skipCount = 0;
+            let errorCount = 0;
+
+            showToast("Processing bulk import...", "info");
+
+            const users = await usersService.getUsers();
+            const assignmentMap = await usersService.getEventAssignments();
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',').map(v => v.trim());
+                const row = {};
+                headers.forEach((h, index) => {
+                    row[h] = values[index];
+                });
+
+                const phone = row.phone || "";
+                if (!phone) {
+                    skipCount++;
+                    continue;
+                }
+
+                // Check duplicate
+                const { data: existing } = await leadsService.getLeadByPhone(phone);
+                if (existing) {
+                    skipCount++;
+                    continue;
+                }
+
+                const leadData = {
+                    full_name: row.name || row.full_name || "Unknown",
+                    phone: phone,
+                    source: row.source || "Bulk Import",
+                    events_interested: [row.primary_event].filter(Boolean),
+                    primary_event: row.primary_event || "",
+                    travel_date: row.travel_date || null,
+                    reasons_to_call: [], 
+                    status: "New Inquiry",
+                    actions_required: [],
+                    assigned_to: null,
+                    remarks: row.remarks || "Imported via bulk upload"
+                };
+
+                // Auto-assignment logic
+                if (assignmentMap.success && assignmentMap.data[leadData.primary_event]) {
+                    const assignedUserName = assignmentMap.data[leadData.primary_event];
+                    const userObj = users.data.find(u => u.full_name === assignedUserName);
+                    if (userObj) leadData.assigned_to = userObj.id;
+                }
+
+                if (!leadData.assigned_to && currentUser) {
+                    leadData.assigned_to = currentUser.id;
+                }
+
+                const res = await leadsService.createLead(leadData);
+                if (res.success) {
+                    successCount++;
+                    await activitiesService.addActivity(res.data.id, 'status_change', `Lead created via bulk import`);
+                } else {
+                    errorCount++;
+                }
+            }
+
+            showToast(`Import completed: ${successCount} saved, ${skipCount} skipped (duplicates/empty), ${errorCount} errors.`, "success");
+            bulkImportInput.value = "";
+            renderDashboard();
+            renderLeads();
+        };
+        reader.readAsText(file);
+    });
+}
+
+if (downloadSampleBtn) {
+    downloadSampleBtn.addEventListener('click', () => {
+        const headers = "name,phone,source,primary_event,travel_date,remarks";
+        const sampleRow = "John Doe,1234567890,Google Search,Bali Retreat 2024,2024-12-31,Highly interested";
+        const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + sampleRow;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "crm_bulk_import_sample.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
 
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {

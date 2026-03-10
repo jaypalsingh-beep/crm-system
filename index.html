@@ -159,6 +159,29 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="card recent-activity" style="margin-top: 1.5rem; border-top: 3px solid var(--error);">
+                        <div class="table-header" style="justify-content: flex-start; gap: 1rem;">
+                            <h2 style="color: var(--error);">Stale Inquiries (No updates for 3+ days)</h2>
+                            <i data-lucide="clock" style="color: var(--error); width: 20px;"></i>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Last Update</th>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Assigned To</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staleLeadsTableBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lead Requests View -->
@@ -222,6 +245,15 @@
                                         <input type="date" id="dateToFilter">
                                     </div>
                                     <button id="clearFiltersBtn" class="btn btn-secondary" style="margin-left: auto;">Reset</button>
+                                    <button id="downloadSampleBtn" class="btn btn-secondary" style="margin-left: 1rem; border: 1px dotted var(--primary-light); background: transparent; color: var(--primary);">
+                                        <i data-lucide="download" style="width: 14px; height: 14px; margin-right: 0.4rem;"></i>
+                                        Sample CSV
+                                    </button>
+                                    <button id="bulkImportBtn" class="btn btn-primary" style="margin-left: 0.5rem; background: var(--secondary); border: 1px solid var(--primary-light);">
+                                        <i data-lucide="upload-cloud" style="width: 16px; height: 16px; margin-right: 0.5rem;"></i>
+                                        Bulk Import
+                                    </button>
+                                    <input type="file" id="bulkImportInput" style="display: none;" accept=".csv">
                                 </div>
                             </div>
                         </div>
@@ -596,6 +628,6 @@
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
-    <script type="module" src="app.js?v=8"></script>
+    <script type="module" src="app.js?v=10"></script>
 </body>
 </html>

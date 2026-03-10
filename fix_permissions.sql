@@ -77,10 +77,7 @@ CREATE POLICY "Only admins can modify assignments" ON event_assignments FOR ALL
     USING (get_my_role() = 'Admin');
 
 -- 7. Ensure correct GRANTS (Supabase defaults usually work, but let's be safe)
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
-GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+-- Moved to bottom to ensure new tables are included
 
 -- 8. Lead Requests
 CREATE TABLE IF NOT EXISTS lead_requests (
@@ -105,3 +102,10 @@ USING (get_my_role() = 'Admin');
 DROP POLICY IF EXISTS "Admins can update lead requests" ON lead_requests;
 CREATE POLICY "Admins can update lead requests" ON lead_requests FOR UPDATE 
 USING (get_my_role() = 'Admin');
+
+-- Re-apply grants at the end
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
