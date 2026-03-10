@@ -213,8 +213,8 @@ function renderDynamicOptions() {
     renderMultiSelectOptions(document.getElementById('eventsInterestedContainer'), currentFormOptions.events, 'ev');
     
     // Populate the new single selects
-    renderSelectOptions(reasonsSelect, currentFormOptions.reasons, "Select Reason");
-    renderSelectOptions(actionsSelect, currentFormOptions.actions, "Select Action");
+    renderSelectOptions(document.getElementById('reasonsSelect'), currentFormOptions.reasons, "Select Reason");
+    renderSelectOptions(document.getElementById('actionsSelect'), currentFormOptions.actions, "Select Action");
     renderSelectOptions(document.getElementById('participantStatus'), currentFormOptions.statuses, "Select Status");
     renderSelectOptions(detailStatusSelect, currentFormOptions.statuses);
 
