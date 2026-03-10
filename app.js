@@ -686,7 +686,8 @@ addNoteBtn.addEventListener('click', async () => {
 });
 
 
-detailStatusSelect.addEventListener('change', async (e) => {
+if (detailStatusSelect) {
+    detailStatusSelect.addEventListener('change', async (e) => {
     const newStatus = e.target.value;
     if (!currentViewingLeadId) return;
 
@@ -702,38 +703,46 @@ detailStatusSelect.addEventListener('change', async (e) => {
     } else {
         showToast("Error updating status", "error");
     }
-});
+    });
+}
 
-backToLeadsBtn.addEventListener('click', () => {
-    showView('leads-view', 'Leads');
-    renderLeads();
-});
-
-document.getElementById('resolveIssueBtn').addEventListener('click', async () => {
-    if (!currentViewingLeadId) return;
-    if (!confirm("Mark this issue as Resolved?")) return;
-
-    const { data: lead } = await leadsService.getLeadById(currentViewingLeadId);
-    const oldStatus = lead.status;
-    const newStatus = "Resolved";
-
-    const { success, error } = await leadsService.updateLead(currentViewingLeadId, { status: newStatus });
-    if (success) {
-        showToast("Issue Resolved successfully", "success");
-        await activitiesService.logStatusChange(currentViewingLeadId, oldStatus, newStatus);
-        await viewLeadDetail(currentViewingLeadId); // Refresh view
-        await renderDashboard(); // Update counts
-    } else {
-        showToast("Error resolving issue: " + error, "error");
-    }
-});
-
-editLeadFromDetailBtn.addEventListener('click', () => {
-    if (currentViewingLeadId) {
+if (backToLeadsBtn) {
+    backToLeadsBtn.addEventListener('click', () => {
         showView('leads-view', 'Leads');
-        editLead(currentViewingLeadId);
-    }
-});
+        renderLeads();
+    });
+}
+
+const resolveBtn = document.getElementById('resolveIssueBtn');
+if (resolveBtn) {
+    resolveBtn.addEventListener('click', async () => {
+        if (!currentViewingLeadId) return;
+        if (!confirm("Mark this issue as Resolved?")) return;
+
+        const { data: lead } = await leadsService.getLeadById(currentViewingLeadId);
+        const oldStatus = lead.status;
+        const newStatus = "Resolved";
+
+        const { success, error } = await leadsService.updateLead(currentViewingLeadId, { status: newStatus });
+        if (success) {
+            showToast("Issue Resolved successfully", "success");
+            await activitiesService.logStatusChange(currentViewingLeadId, oldStatus, newStatus);
+            await viewLeadDetail(currentViewingLeadId); // Refresh view
+            await renderDashboard(); // Update counts
+        } else {
+            showToast("Error resolving issue: " + error, "error");
+        }
+    });
+}
+
+if (editLeadFromDetailBtn) {
+    editLeadFromDetailBtn.addEventListener('click', () => {
+        if (currentViewingLeadId) {
+            showView('leads-view', 'Leads');
+            editLead(currentViewingLeadId);
+        }
+    });
+}
 
 // --- Form & Action Handlers ---
 // --- Filters ---
@@ -759,22 +768,7 @@ window.editLead = async (id) => {
 // --- Form Helpers Removed (Moved to new-inquiry.html) ---
 
 // Listeners
-// Listeners (Global)
-searchInput.addEventListener('input', renderLeads);
-statusFilter.addEventListener('change', renderLeads);
-dateFromFilter.addEventListener('change', renderLeads);
-dateToFilter.addEventListener('change', renderLeads);
-
-if (clearFiltersBtn) {
-    clearFiltersBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        statusFilter.value = 'All';
-        dateFromFilter.value = '';
-        dateToFilter.value = '';
-        renderLeads();
-    });
-}
-
+// The duplicates are removed
 // --- UI Helpers ---
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
