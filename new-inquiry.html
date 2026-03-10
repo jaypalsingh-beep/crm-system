@@ -209,6 +209,8 @@
 
         // State
         let currentUser = null;
+        let allUsers = [];
+        let currentEventAssignments = {};
         let currentFormOptions = { events: [], sources: [], reasons: [], actions: [], statuses: [] };
 
         // DOM Elements
@@ -258,6 +260,8 @@
                 group.style.display = 'none';
                 primaryEventSelect.value = selected[0] || '';
             }
+            // Trigger realtime update check
+            updateRealtimeAssignment();
         }
 
         function updatePrimaryOptions(selected) {
@@ -271,18 +275,72 @@
             });
             if (selected.includes(currentVal)) primaryEventSelect.value = currentVal;
             else primaryEventSelect.value = selected[0] || '';
+            
+            // Trigger realtime update check
+            updateRealtimeAssignment();
+        }
+
+        function updateRealtimeAssignment() {
+            if (!assignToInput) return;
+            
+            const reason = reasonsSelect.value;
+            const primaryEvent = primaryEventSelect.value;
+            
+            let assignedToId = null;
+            let assignedToName = "Unassigned";
+
+            // 1. Reason-based overrides
+            if (reason === 'Payment/Refund') {
+                const refundManager = allUsers.find(u => u.role === 'Refund Manager');
+                if (refundManager) {
+                    assignedToId = refundManager.id;
+                    assignedToName = refundManager.full_name;
+                }
+            } else if (reason === 'Special Camp') {
+                const specialManager = allUsers.find(u => u.role === 'Special Camp Manager');
+                if (specialManager) {
+                    assignedToId = specialManager.id;
+                    assignedToName = specialManager.full_name;
+                }
+            }
+
+            // 2. Event-based assignment
+            if (!assignedToId && primaryEvent) {
+                const assignment = currentEventAssignments[primaryEvent];
+                if (assignment) {
+                    assignedToId = assignment.id;
+                    assignedToName = assignment.name;
+                }
+            }
+
+            // 3. Fallback to current user
+            if (!assignedToId && currentUser) {
+                assignedToId = currentUser.id;
+                assignedToName = currentUser.full_name || currentUser.email;
+            }
+
+            assignToInput.value = assignedToName;
+            assignToInput.dataset.userId = assignedToId || '';
         }
 
         async function loadOptions() {
-            const { data, success } = await settingsService.getFormOptions();
-            if (success) {
-                currentFormOptions = data;
-                populateSelect('leadSource', data.sources);
-                populateSelect('reasonsSelection', data.reasons);
-                populateSelect('actionsRequired', data.actions);
-                populateSelect('participantStatus', data.statuses);
-                renderEventCheckboxes(data.events);
+            const [settingsRes, usersRes, assignmentsRes] = await Promise.all([
+                settingsService.getFormOptions(),
+                usersService.getUsers(),
+                usersService.getEventAssignments()
+            ]);
+
+            if (settingsRes.success) {
+                currentFormOptions = settingsRes.data;
+                populateSelect('leadSource', settingsRes.data.sources);
+                populateSelect('reasonsSelection', settingsRes.data.reasons);
+                populateSelect('actionsRequired', settingsRes.data.actions);
+                populateSelect('participantStatus', settingsRes.data.statuses);
+                renderEventCheckboxes(settingsRes.data.events);
             }
+
+            if (usersRes.success) allUsers = usersRes.data;
+            if (assignmentsRes.success) currentEventAssignments = assignmentsRes.data;
         }
 
         function populateSelect(id, options) {
@@ -351,6 +409,13 @@
             }
 
             if (window.lucide) lucide.createIcons();
+
+            // Add real-time assignment listeners
+            if (reasonsSelect) reasonsSelect.addEventListener('change', updateRealtimeAssignment);
+            if (primaryEventSelect) primaryEventSelect.addEventListener('change', updateRealtimeAssignment);
+
+            // Initial assignment check
+            updateRealtimeAssignment();
         }
 
         function applyPermissions() {
@@ -462,6 +527,7 @@
 
                 let primaryVal = primaryEventSelect.value || selectedEvents[0];
                 
+
                 const leadData = {
                     full_name: document.getElementById('fullName').value,
                     phone: phoneInput,
@@ -472,33 +538,9 @@
                     reasons_to_call: [reasonsSelect.value],
                     status: document.getElementById('participantStatus').value,
                     actions_required: [actionsSelect.value],
-                    assigned_to: null, 
+                    assigned_to: assignToInput.dataset.userId || currentUser.id, 
                     remarks: document.getElementById('remarks').value
                 };
-
-                // Auto-assignment logic
-                const reasonToCall = leadData.reasons_to_call[0];
-                const users = await usersService.getUsers();
-
-                if (reasonToCall === 'Payment/Refund') {
-                    const refundManager = users.data.find(u => u.role === 'Refund Manager');
-                    if (refundManager) leadData.assigned_to = refundManager.id;
-                } else if (reasonToCall === 'Special Camp') {
-                    const specialManager = users.data.find(u => u.role === 'Special Camp Manager');
-                    if (specialManager) leadData.assigned_to = specialManager.id;
-                }
-
-                if (!leadData.assigned_to) {
-                    const assignmentMap = await usersService.getEventAssignments();
-                    const assignment = assignmentMap.data[leadData.primary_event];
-                    if (assignment) {
-                        leadData.assigned_to = assignment.id;
-                    }
-                }
-
-                if (!leadData.assigned_to) {
-                    leadData.assigned_to = currentUser.id;
-                }
 
                 let result;
                 if (editingId) {
