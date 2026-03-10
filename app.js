@@ -25,12 +25,8 @@ const staleLeadsTableBody = document.getElementById('staleLeadsTableBody');
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
 
-// Dashboard Stat Elements
-const totalLeadsCount = document.getElementById('totalLeadsCount');
-const newLeadsCount = document.getElementById('newLeadsCount');
-const qualifiedLeadsCount = document.getElementById('qualifiedLeadsCount');
-const wonLeadsCount = document.getElementById('wonLeadsCount');
-const lostLeadsCount = document.getElementById('lostLeadsCount');
+// Dashboard stat container
+const analyticsDashboard = document.getElementById('analyticsDashboard');
 
 // Lead Detail Elements
 const leadDetailsView = document.getElementById('lead-details-view');
@@ -464,9 +460,16 @@ function createStatCard(title, value, iconName) {
     return div;
 }
 
-window.renderDashboard = async () => {
-    const { data: leads, success } = await leadsService.getLeads();
-    if (!success) return;
+window.renderDashboard = renderDashboard;
+window.renderLeads = renderLeads;
+
+async function renderDashboard() {
+    try {
+        const { data: leads, success } = await leadsService.getLeads();
+        if (!success) {
+            console.error("Failed to fetch leads for dashboard");
+            return;
+        }
 
     if (analyticsDashboard) {
         analyticsDashboard.innerHTML = "";
@@ -562,7 +565,10 @@ window.renderDashboard = async () => {
     }
 
     if (window.lucide) lucide.createIcons();
-};
+    } catch (err) {
+        console.error("renderDashboard error:", err);
+    }
+}
 
 // --- Leads List Rendering ---
 async function renderLeads() {
@@ -750,35 +756,24 @@ window.editLead = async (id) => {
     window.location.href = `new-inquiry.html?id=${id}`;
 };
 
-function resetForm() {
-    leadForm.reset();
-    editingIdInput.value = "";
-    formTitle.innerText = "New Inquiry";
-    submitBtn.innerText = "Save Inquiry";
-    cancelEditBtn.style.display = "none";
-    
-    // Clear custom multi-selects manually since reset() only covers native inputs
-    const checkboxes = leadForm.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(cb => cb.checked = false);
-    togglePrimaryEventVisibility();
-}
+// --- Form Helpers Removed (Moved to new-inquiry.html) ---
 
 // Listeners
+// Listeners (Global)
 searchInput.addEventListener('input', renderLeads);
 statusFilter.addEventListener('change', renderLeads);
 dateFromFilter.addEventListener('change', renderLeads);
 dateToFilter.addEventListener('change', renderLeads);
 
-clearFiltersBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    statusFilter.value = 'All';
-    dateFromFilter.value = '';
-    dateToFilter.value = '';
-    renderLeads();
-});
-
-clearBtn.addEventListener('click', () => { if (confirm('Clear form?')) resetForm(); });
-cancelEditBtn.addEventListener('click', resetForm);
+if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        statusFilter.value = 'All';
+        dateFromFilter.value = '';
+        dateToFilter.value = '';
+        renderLeads();
+    });
+}
 
 // --- UI Helpers ---
 function showToast(message, type = 'success') {

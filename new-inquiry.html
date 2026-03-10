@@ -18,126 +18,178 @@
 </head>
 
 <body class="bg-main">
-    <div class="dashboard-container" style="display: block; padding: 2rem;">
-        <div class="card" style="max-width: 900px; margin: 0 auto; animation: fadeIn 0.4s ease-out;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h2 id="formTitle" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                        <i data-lucide="plus-circle" class="text-primary"></i> New Inquiry
-                    </h2>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Fill in the details to create a new inquiry record.</p>
-                </div>
-                <a href="index.html" class="btn btn-secondary">
-                    <i data-lucide="arrow-left"></i> Back to Dashboard
-                </a>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i data-lucide="layers" class="brand-icon"></i>
+                <h2>CRM Pro</h2>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
             </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item" data-page="dashboard-view" onclick="window.location.href='index.html'">
+                        <i data-lucide="layout-dashboard" class="nav-icon"></i> <span>Dashboard</span>
+                    </li>
+                    <li class="nav-item active" data-page="leads-view" onclick="window.location.href='index.html#leads-view'">
+                        <i data-lucide="users" class="nav-icon"></i> <span>Leads</span>
+                    </li>
+                    <li class="nav-item" data-page="users-view" id="nav-team" onclick="window.location.href='index.html#users-view'">
+                        <i data-lucide="user-plus" class="nav-icon"></i> <span>Team & Assignments</span>
+                    </li>
+                    <li class="nav-item" data-page="reports-view" onclick="window.location.href='index.html#reports-view'">
+                        <i data-lucide="bar-chart-3" class="nav-icon"></i> <span>Insights</span>
+                    </li>
+                    <li class="nav-item" data-page="lead-requests-view" id="nav-requests" onclick="window.location.href='index.html#lead-requests-view'">
+                        <i data-lucide="clipboard-list" class="nav-icon"></i> <span>Lead Requests</span>
+                    </li>
+                    <li class="nav-item" data-page="settings-view" id="nav-settings" onclick="window.location.href='index.html#settings-view'">
+                        <i data-lucide="settings" class="nav-icon"></i> <span>Field Configuration</span>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
 
-            <form id="leadForm">
-                <input type="hidden" id="editingId">
-                <div class="form-grid">
-                    <!-- Section: Lead Info -->
-                    <div class="form-section">
-                        <h3><i data-lucide="user"></i> Lead Information</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="leadSource">Lead Source</label>
-                                <select id="leadSource" required>
-                                    <option value="" disabled selected>Select Source</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="fullName">Full Name</label>
-                                <input type="text" id="fullName" required placeholder="Enter full name">
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" required placeholder="Enter phone number">
-                            </div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">New Inquiry</h1>
+                </div>
+                <div class="header-right">
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm" style="margin-right: 1rem;">Logout</button>
+                    <div class="user-profile">
+                        <span class="user-name" id="currentUserDisplayName">User</span>
+                        <div class="user-avatar" id="currentUserAvatar">U</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area" style="padding: 2rem;">
+                <div class="card" style="max-width: 900px; margin: 0 auto; animation: fadeIn 0.4s ease-out;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 id="formTitle" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                                <i data-lucide="plus-circle" class="text-primary"></i> New Inquiry
+                            </h2>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Fill in the details to create a new inquiry record.</p>
                         </div>
+                        <a href="index.html" class="btn btn-secondary">
+                            <i data-lucide="arrow-left"></i> Back to Dashboard
+                        </a>
                     </div>
 
-                    <!-- Section: Event Details -->
-                    <div class="form-section">
-                        <h3><i data-lucide="map-pin"></i> Event Details</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label>Events Interested In</label>
-                                <div class="multi-select-container" id="eventsInterestedContainer">
-                                    <div class="multi-select-search">
-                                        <i data-lucide="search"
-                                            style="width: 16px; color: var(--text-muted); margin-left: 0.5rem;"></i>
-                                        <input type="text" placeholder="Search events..." class="inner-search-input">
+                    <form id="leadForm">
+                        <input type="hidden" id="editingId">
+                        <div class="form-grid">
+                            <!-- Section: Lead Info -->
+                            <div class="form-section">
+                                <h3><i data-lucide="user"></i> Lead Information</h3>
+                                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                    <div class="form-group">
+                                        <label for="leadSource">Lead Source</label>
+                                        <select id="leadSource" required>
+                                            <option value="" disabled selected>Select Source</option>
+                                            <!-- Dynamic -->
+                                        </select>
                                     </div>
-                                    <div class="checkbox-list">
-                                        <!-- Dynamic -->
+                                    <div class="form-group">
+                                        <label for="fullName">Full Name</label>
+                                        <input type="text" id="fullName" required placeholder="Enter full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phone">Phone Number</label>
+                                        <input type="tel" id="phone" required placeholder="Enter phone number">
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group" id="primaryEventGroup" style="display: none;">
-                                <label for="primaryEvent">Primary Event</label>
-                                <select id="primaryEvent" required>
-                                    <option value="" disabled selected>Select Primary Event</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="travelDate">Tentative Travel Date</label>
-                                <input type="date" id="travelDate" required>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Section: Engagement -->
-                    <div class="form-section">
-                        <h3><i data-lucide="message-square"></i> Engagement</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="reasonsSelection">Reason to Call</label>
-                                <select id="reasonsSelection" required>
-                                    <option value="" disabled selected>Select Reason</option>
-                                    <!-- Dynamic -->
-                                </select>
+                            <!-- Section: Event Details -->
+                            <div class="form-section">
+                                <h3><i data-lucide="map-pin"></i> Event Details</h3>
+                                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                    <div class="form-group">
+                                        <label>Events Interested In</label>
+                                        <div class="multi-select-container" id="eventsInterestedContainer">
+                                            <div class="multi-select-search">
+                                                <i data-lucide="search"
+                                                    style="width: 16px; color: var(--text-muted); margin-left: 0.5rem;"></i>
+                                                <input type="text" placeholder="Search events..." class="inner-search-input">
+                                            </div>
+                                            <div class="checkbox-list">
+                                                <!-- Dynamic -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" id="primaryEventGroup" style="display: none;">
+                                        <label for="primaryEvent">Primary Event</label>
+                                        <select id="primaryEvent" required>
+                                            <option value="" disabled selected>Select Primary Event</option>
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="travelDate">Tentative Travel Date</label>
+                                        <input type="date" id="travelDate" required>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="actionsRequired">Action Required</label>
-                                <select id="actionsRequired" required>
-                                    <option value="" disabled selected>Select Action</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="participantStatus">Current Participant Status</label>
-                                <select id="participantStatus" required>
-                                    <option value="" disabled selected>Select Status</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Section: Admin & Remarks -->
-                    <div class="form-section">
-                        <h3><i data-lucide="clipboard"></i> Admin & Remarks</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="assignTo">Assigned To</label>
-                                <input type="text" id="assignTo" readonly placeholder="Auto-assigned"
-                                    style="background-color: rgba(255,255,255,0.5);">
+                            <!-- Section: Engagement -->
+                            <div class="form-section">
+                                <h3><i data-lucide="message-square"></i> Engagement</h3>
+                                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                    <div class="form-group">
+                                        <label for="reasonsSelection">Reason to Call</label>
+                                        <select id="reasonsSelection" required>
+                                            <option value="" disabled selected>Select Reason</option>
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="actionsRequired">Action Required</label>
+                                        <select id="actionsRequired" required>
+                                            <option value="" disabled selected>Select Action</option>
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="participantStatus">Current Participant Status</label>
+                                        <select id="participantStatus" required>
+                                            <option value="" disabled selected>Select Status</option>
+                                            <!-- Dynamic -->
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="remarks">Remarks</label>
-                                <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
+
+                            <!-- Section: Admin & Remarks -->
+                            <div class="form-section">
+                                <h3><i data-lucide="clipboard"></i> Admin & Remarks</h3>
+                                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                    <div class="form-group">
+                                        <label for="assignTo">Assigned To</label>
+                                        <input type="text" id="assignTo" readonly placeholder="Auto-assigned"
+                                            style="background-color: rgba(255,255,255,0.5);">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="remarks">Remarks</label>
+                                        <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                            <button type="submit" id="submitBtn" class="btn btn-primary" style="flex: 1; padding: 1rem;">Save Inquiry</button>
+                            <button type="button" id="clearBtn" class="btn btn-secondary" style="flex: 1; padding: 1rem;">Clear Form</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
-                    <button type="submit" id="submitBtn" class="btn btn-primary" style="flex: 1; padding: 1rem;">Save Inquiry</button>
-                    <button type="button" id="clearBtn" class="btn btn-secondary" style="flex: 1; padding: 1rem;">Clear Form</button>
-                </div>
-            </form>
-        </div>
+            </div>
+        </main>
     </div>
 
     <div id="toast-container"></div>
@@ -269,6 +321,9 @@
             const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
             currentUser = { ...user, ...profile };
             
+            // Apply Permissions (Role switcher, user display, etc.)
+            applyPermissions();
+            
             await loadOptions();
 
             // Check for edit ID in URL
@@ -279,6 +334,44 @@
             }
 
             if (window.lucide) lucide.createIcons();
+        }
+
+        function applyPermissions() {
+            if (!currentUser) return;
+            // Sidebar and user display
+            const navTeam = document.getElementById('nav-team');
+            const navRequests = document.getElementById('nav-requests');
+            const navSettings = document.getElementById('nav-settings');
+            const currentUserDisplayName = document.getElementById('currentUserDisplayName');
+            const currentUserAvatar = document.getElementById('currentUserAvatar');
+
+            if (currentUser.role === 'Executive') {
+                if (navTeam) navTeam.style.display = 'none';
+                if (navRequests) navRequests.style.display = 'none';
+                if (navSettings) navSettings.style.display = 'none';
+            } else if (currentUser.role === 'Manager') {
+                if (navRequests) navRequests.style.display = 'none';
+                if (navSettings) navSettings.style.display = 'none';
+            }
+
+            if (currentUserDisplayName) currentUserDisplayName.innerText = currentUser.full_name || currentUser.email;
+            if (currentUserAvatar) currentUserAvatar.innerText = (currentUser.full_name || currentUser.email).substring(0, 2).toUpperCase();
+        }
+
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                const sidebarNav = document.querySelector('.sidebar-nav');
+                if (sidebarNav) sidebarNav.classList.toggle('active');
+            });
+        }
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                await authService.signOut();
+                window.location.href = 'index.html';
+            });
         }
 
         async function loadLeadForEdit(id) {

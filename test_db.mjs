@@ -14,21 +14,21 @@ const supabase = createClient(url, key);
 async function test() {
     // 1. Sign in as admin
     const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-        email: 'rushiraj@invinciblengo.org',
-        password: 'password' // Assuming this is test password, or we can just trace REST
+        email: 'jaypalsingh@invinciblengo.org',
+        password: 'Jaypal@2710' // Assuming this is test password, or we can just trace REST
     });
-    
+
     if (authErr) {
         console.error('Auth error:', authErr.message);
         return;
     }
-    
+
     console.log('Logged in as:', authData.user.email);
-    
+
     // 2. Query form_options
     const { data: optData, error: optErr } = await supabase.from('form_options').select('*');
     console.log('Form options:', optData ? optData.length : optErr);
-    
+
     // 3. Query profiles
     const { data: profData, error: profErr } = await supabase.from('profiles').select('*');
     console.log('Profiles:', profData ? profData.length : profErr);
