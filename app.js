@@ -161,12 +161,19 @@ async function checkAuth() {
         await usersService.ensureProfile(user);
         currentUser = user;
         applyPermissions();
-        loginView.classList.remove('active');
-        logoutBtn.style.display = 'block';
         
-        await loadInitialData();
-        showView('dashboard-view', 'Dashboard');
-        renderDashboard();
+        // Only redirect to dashboard if we are currently on the login view or no view is active
+        const activeView = document.querySelector('.view-section.active');
+        if (!activeView || activeView.id === 'login-view') {
+            loginView.classList.remove('active');
+            logoutBtn.style.display = 'block';
+            await loadInitialData();
+            showView('dashboard-view', 'Dashboard');
+            renderDashboard();
+        } else {
+            // Just refresh data without forcing a view change
+            await loadInitialData();
+        }
     } else {
         document.body.classList.remove('logged-in');
         currentUser = null;
@@ -231,8 +238,8 @@ function renderUserEventOptions(excludeExceptUserId = null) {
     
     // Filter events: don't show if already assigned to SOMEONE ELSE
     const assignedToOthers = Object.entries(currentEventAssignments)
-        .filter(([ev, uid]) => uid !== excludeExceptUserId)
-        .map(([ev, uid]) => ev);
+        .filter(([ev, assignment]) => assignment.id !== excludeExceptUserId)
+        .map(([ev, assignment]) => ev);
         
     const availableEventsForUsers = currentFormOptions.events.filter(ev => !assignedToOthers.includes(ev));
     renderMultiSelectOptions(userEventsContainer, availableEventsForUsers, 'u_ev');
@@ -300,7 +307,7 @@ function togglePrimaryEventVisibility() {
         if (selectedEvents.length === 1) {
             primaryEventSelect.value = selectedEvents[0];
             // Update assigned to field based on this event
-            const assignedName = currentEventAssignments[selectedEvents[0]];
+            const assignedName = currentEventAssignments[selectedEvents[0]]?.name;
             assignToInput.value = assignedName || currentUser?.full_name || currentUser?.email || 'Unassigned';
         } else {
             primaryEventSelect.value = '';
@@ -435,7 +442,7 @@ if (primaryEventSelectGlobal) {
         const event = e.target.value;
         const assignToInput = document.getElementById('assignTo');
         if (assignToInput) {
-            assignToInput.value = currentEventAssignments[event] || currentUser?.full_name || currentUser?.email || "Unassigned";
+            assignToInput.value = currentEventAssignments[event]?.name || currentUser?.full_name || currentUser?.email || "Unassigned";
         }
     });
 }
@@ -786,6 +793,14 @@ window.editLead = async (id) => {
 // Listeners
 // The duplicates are removed
 // --- UI Helpers ---
+window.appendQuickNote = (targetId, text) => {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    const currentVal = el.value.trim();
+    el.value = currentVal ? currentVal + "\n" + text : text;
+    el.focus();
+};
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;

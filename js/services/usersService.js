@@ -57,13 +57,16 @@ export const usersService = {
         try {
             const { data, error } = await supabase
                 .from('event_assignments')
-                .select('*, profiles(full_name)');
+                .select('*, profiles(id, full_name)');
 
             if (error) throw error;
 
             const map = {};
             data.forEach(item => {
-                map[item.event_value] = item.profiles.full_name;
+                map[item.event_value] = { 
+                    id: item.profiles.id, 
+                    name: item.profiles.full_name 
+                };
             });
 
             return { data: map, success: true };

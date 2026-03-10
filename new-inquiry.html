@@ -178,6 +178,11 @@
                                     <div class="form-group">
                                         <label for="remarks">Remarks</label>
                                         <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
+                                        <div class="quick-notes" style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            <button type="button" class="btn btn-sm" onclick="appendQuickNote('remarks', 'Follow Up Call Done')" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; background: var(--border); border-radius: 4px;">Follow Up Call Done</button>
+                                            <button type="button" class="btn btn-sm" onclick="appendQuickNote('remarks', 'WhatsApp Details Sent!')" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; background: var(--border); border-radius: 4px;">WhatsApp Details Sent!</button>
+                                            <button type="button" class="btn btn-sm" onclick="appendQuickNote('remarks', 'Need to Call Back')" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; background: var(--border); border-radius: 4px;">Need to Call Back</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -216,6 +221,14 @@
         const assignToInput = document.getElementById('assignTo');
 
         // Helpers
+        window.appendQuickNote = (targetId, text) => {
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            const currentVal = el.value.trim();
+            el.value = currentVal ? currentVal + "\n" + text : text;
+            el.focus();
+        };
+
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -462,10 +475,9 @@
 
                 if (!leadData.assigned_to) {
                     const assignmentMap = await usersService.getEventAssignments();
-                    const assignedUserName = assignmentMap.data[leadData.primary_event];
-                    if (assignedUserName) {
-                        const userObj = users.data.find(u => u.full_name === assignedUserName);
-                        if (userObj) leadData.assigned_to = userObj.id;
+                    const assignment = assignmentMap.data[leadData.primary_event];
+                    if (assignment) {
+                        leadData.assigned_to = assignment.id;
                     }
                 }
 
