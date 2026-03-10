@@ -53,14 +53,20 @@ const handlePhoneBlur = async () => {
 }
 
 const handleSubmit = async () => {
+  if (saving.value) return
   saving.value = true
   try {
-    const { data, success, error } = await createLead(formData.value)
+    const payload: any = { ...formData.value }
+    if (!payload.assigned_to) {
+      delete payload.assigned_to
+    }
+    const { data, success, error } = await createLead(payload)
     if (success) {
       alert('Lead created successfully!')
       navigateTo('/leads')
     } else {
-      alert('Error: ' + error)
+      console.error(error)
+      alert('Error saving lead: ' + error)
     }
   } finally {
     saving.value = false
@@ -132,6 +138,7 @@ onMounted(() => {
           <div v-if="formData.events_interested.length > 0" class="form-group" style="margin-top: 1rem;">
             <label>Primary Event</label>
             <select v-model="formData.primary_event" required>
+              <option value="" disabled>Select Primary Event</option>
               <option v-for="e in formData.events_interested" :key="e" :value="e">{{ e }}</option>
             </select>
           </div>
@@ -147,18 +154,21 @@ onMounted(() => {
           <div class="form-group">
             <label>Reason to Call</label>
             <select v-model="formData.reason_to_call" required>
+              <option value="" disabled>Select Reason</option>
               <option v-for="r in options.reasons" :key="r" :value="r">{{ r }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Action Required</label>
             <select v-model="formData.action_required" required>
+              <option value="" disabled>Select Action</option>
               <option v-for="a in options.actions" :key="a" :value="a">{{ a }}</option>
             </select>
           </div>
           <div class="form-group">
              <label>Current Status</label>
             <select v-model="formData.status" required>
+              <option value="" disabled>Select Status</option>
               <option v-for="s in options.statuses" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
