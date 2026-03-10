@@ -102,7 +102,9 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
-                                        <input type="tel" id="phone" required placeholder="Enter phone number">
+                                        <input type="tel" id="phone" required placeholder="Enter 10-digit phone number"
+                                            maxlength="10" pattern="\d{10}"
+                                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                                     </div>
                                 </div>
                             </div>
@@ -131,36 +133,33 @@
                                             <!-- Dynamic -->
                                         </select>
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="display: none;">
                                         <label for="travelDate">Tentative Travel Date</label>
-                                        <input type="date" id="travelDate" required>
+                                        <input type="date" id="travelDate">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Section: Engagement -->
-                            <div class="form-section">
+                            <!-- Section: Engagement (Hidden for Simplicity) -->
+                            <div class="form-section" style="display: none;">
                                 <h3><i data-lucide="message-square"></i> Engagement</h3>
                                 <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                                     <div class="form-group">
                                         <label for="reasonsSelection">Reason to Call</label>
-                                        <select id="reasonsSelection" required>
-                                            <option value="" disabled selected>Select Reason</option>
-                                            <!-- Dynamic -->
+                                        <select id="reasonsSelection">
+                                            <option value="" selected>Select Reason</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="actionsRequired">Action Required</label>
-                                        <select id="actionsRequired" required>
-                                            <option value="" disabled selected>Select Action</option>
-                                            <!-- Dynamic -->
+                                        <select id="actionsRequired">
+                                            <option value="" selected>Select Action</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="participantStatus">Current Participant Status</label>
-                                        <select id="participantStatus" required>
-                                            <option value="" disabled selected>Select Status</option>
-                                            <!-- Dynamic -->
+                                        <select id="participantStatus">
+                                            <option value="" selected>Select Status</option>
                                         </select>
                                     </div>
                                 </div>
@@ -210,6 +209,7 @@
         // State
         let currentUser = null;
         let currentFormOptions = { events: [], sources: [], reasons: [], actions: [], statuses: [] };
+        let currentEventAssignments = {};
 
         // DOM Elements
         const leadForm = document.getElementById('leadForm');
@@ -271,6 +271,17 @@
             });
             if (selected.includes(currentVal)) primaryEventSelect.value = currentVal;
             else primaryEventSelect.value = selected[0] || '';
+            
+            updateAssignedToDisplay();
+        }
+
+        function updateAssignedToDisplay() {
+            const primaryEvent = primaryEventSelect.value;
+            if (primaryEvent && currentEventAssignments[primaryEvent]) {
+                assignToInput.value = currentEventAssignments[primaryEvent].name;
+            } else {
+                assignToInput.value = "Auto-assigned";
+            }
         }
 
         async function loadOptions() {
@@ -338,6 +349,14 @@
             applyPermissions();
             
             await loadOptions();
+            
+            // Load Assignments for real-time display
+            const assignmentsRes = await usersService.getEventAssignments();
+            if (assignmentsRes.success) {
+                currentEventAssignments = assignmentsRes.data;
+            }
+            
+            primaryEventSelect.addEventListener('change', updateAssignedToDisplay);
 
             // Check for edit ID in URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -474,8 +493,7 @@
                 }
 
                 if (!leadData.assigned_to) {
-                    const assignmentMap = await usersService.getEventAssignments();
-                    const assignment = assignmentMap.data[leadData.primary_event];
+                    const assignment = currentEventAssignments[leadData.primary_event];
                     if (assignment) {
                         leadData.assigned_to = assignment.id;
                     }
