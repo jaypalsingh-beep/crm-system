@@ -102,9 +102,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
-                                        <input type="tel" id="phone" required placeholder="Enter 10-digit phone number"
-                                            maxlength="10" pattern="\d{10}"
-                                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                                        <input type="tel" id="phone" required placeholder="10-digit number" maxlength="10" pattern="\d{10}">
                                     </div>
                                 </div>
                             </div>
@@ -133,33 +131,36 @@
                                             <!-- Dynamic -->
                                         </select>
                                     </div>
-                                    <div class="form-group" style="display: none;">
+                                    <div class="form-group">
                                         <label for="travelDate">Tentative Travel Date</label>
                                         <input type="date" id="travelDate">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Section: Engagement (Hidden for Simplicity) -->
-                            <div class="form-section" style="display: none;">
+                            <!-- Section: Engagement -->
+                            <div class="form-section">
                                 <h3><i data-lucide="message-square"></i> Engagement</h3>
                                 <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                                     <div class="form-group">
                                         <label for="reasonsSelection">Reason to Call</label>
                                         <select id="reasonsSelection">
-                                            <option value="" selected>Select Reason</option>
+                                            <option value="" disabled selected>Select Reason</option>
+                                            <!-- Dynamic -->
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="actionsRequired">Action Required</label>
                                         <select id="actionsRequired">
-                                            <option value="" selected>Select Action</option>
+                                            <option value="" disabled selected>Select Action</option>
+                                            <!-- Dynamic -->
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="participantStatus">Current Participant Status</label>
                                         <select id="participantStatus">
-                                            <option value="" selected>Select Status</option>
+                                            <option value="" disabled selected>Select Status</option>
+                                            <!-- Dynamic -->
                                         </select>
                                     </div>
                                 </div>
@@ -209,7 +210,6 @@
         // State
         let currentUser = null;
         let currentFormOptions = { events: [], sources: [], reasons: [], actions: [], statuses: [] };
-        let currentEventAssignments = {};
 
         // DOM Elements
         const leadForm = document.getElementById('leadForm');
@@ -271,17 +271,6 @@
             });
             if (selected.includes(currentVal)) primaryEventSelect.value = currentVal;
             else primaryEventSelect.value = selected[0] || '';
-            
-            updateAssignedToDisplay();
-        }
-
-        function updateAssignedToDisplay() {
-            const primaryEvent = primaryEventSelect.value;
-            if (primaryEvent && currentEventAssignments[primaryEvent]) {
-                assignToInput.value = currentEventAssignments[primaryEvent].name;
-            } else {
-                assignToInput.value = "Auto-assigned";
-            }
         }
 
         async function loadOptions() {
@@ -313,7 +302,11 @@
         function renderEventCheckboxes(events) {
             const list = eventsContainer.querySelector('.checkbox-list');
             list.innerHTML = '';
-            events.forEach((ev, idx) => {
+            
+            // Sort events alphabetically
+            const sortedEvents = [...events].sort((a, b) => a.localeCompare(b));
+            
+            sortedEvents.forEach((ev, idx) => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
                 div.innerHTML = `
@@ -349,14 +342,6 @@
             applyPermissions();
             
             await loadOptions();
-            
-            // Load Assignments for real-time display
-            const assignmentsRes = await usersService.getEventAssignments();
-            if (assignmentsRes.success) {
-                currentEventAssignments = assignmentsRes.data;
-            }
-            
-            primaryEventSelect.addEventListener('change', updateAssignedToDisplay);
 
             // Check for edit ID in URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -464,6 +449,17 @@
                 }
 
                 const selectedEvents = getMultiSelectValues(eventsContainer);
+                if (selectedEvents.length === 0) {
+                    showToast("Please select at least one event.", "error");
+                    return;
+                }
+
+                const phoneNumber = document.getElementById('phone').value;
+                if (phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
+                    showToast("Phone number must be exactly 10 digits.", "error");
+                    return;
+                }
+
                 let primaryVal = primaryEventSelect.value || selectedEvents[0];
                 
                 const leadData = {
@@ -493,7 +489,8 @@
                 }
 
                 if (!leadData.assigned_to) {
-                    const assignment = currentEventAssignments[leadData.primary_event];
+                    const assignmentMap = await usersService.getEventAssignments();
+                    const assignment = assignmentMap.data[leadData.primary_event];
                     if (assignment) {
                         leadData.assigned_to = assignment.id;
                     }
