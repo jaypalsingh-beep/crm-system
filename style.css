@@ -66,6 +66,22 @@ body {
     overflow-x: hidden;
 }
 
+/* Auth Visibility Classes */
+body:not(.logged-in) .sidebar,
+body:not(.logged-in) .top-header,
+body:not(.logged-in) .fab,
+body:not(.logged-in) .dashboard-container > .card {
+    display: none !important;
+}
+
+body:not(.logged-in) .view-section:not(.active) {
+    display: none !important;
+}
+
+body:not(.logged-in) #login-view {
+    display: block !important;
+}
+
 h1,
 h2,
 h3,
@@ -412,22 +428,42 @@ textarea:focus {
     border-color: var(--border-hover);
 }
 
-/* Right Sidebar (Permanent) */
+/* Glass Sidebar (Generic Card View now) */
 .glass-sidebar {
-    width: 600px;
     background: var(--white);
-    border-left: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    height: 100vh;
     padding: 2.5rem;
     overflow-y: auto;
-    flex-shrink: 0;
-    transition: none;
-    /* remove slide transition */
 }
 
-/* Remove overlay and slide-out styles */
+.fab {
+    position: fixed;
+    bottom: 2.5rem;
+    right: 2.5rem;
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-primary);
+    border: none;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab:hover {
+    transform: scale(1.1) rotate(90deg);
+    background: var(--primary-hover);
+    box-shadow: 0 15px 35px -10px hsla(var(--brand-hue), 75%, 60%, 0.6);
+}
+
+.fab i {
+    width: 28px;
+    height: 28px;
+}
 .glass-sidebar.open {
     right: 0;
 }

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Inquiry | CRM Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-main">
+    <div class="dashboard-container" style="display: block; padding: 2rem;">
+        <div class="card" style="max-width: 900px; margin: 0 auto; animation: fadeIn 0.4s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 id="formTitle" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <i data-lucide="plus-circle" class="text-primary"></i> New Inquiry
+                    </h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Fill in the details to create a new inquiry record.</p>
+                </div>
+                <a href="index.html" class="btn btn-secondary">
+                    <i data-lucide="arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <form id="leadForm">
+                <input type="hidden" id="editingId">
+                <div class="form-grid">
+                    <!-- Section: Lead Info -->
+                    <div class="form-section">
+                        <h3><i data-lucide="user"></i> Lead Information</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div class="form-group">
+                                <label for="leadSource">Lead Source</label>
+                                <select id="leadSource" required>
+                                    <option value="" disabled selected>Select Source</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="fullName">Full Name</label>
+                                <input type="text" id="fullName" required placeholder="Enter full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" id="phone" required placeholder="Enter phone number">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Event Details -->
+                    <div class="form-section">
+                        <h3><i data-lucide="map-pin"></i> Event Details</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div class="form-group">
+                                <label>Events Interested In</label>
+                                <div class="multi-select-container" id="eventsInterestedContainer">
+                                    <div class="multi-select-search">
+                                        <i data-lucide="search"
+                                            style="width: 16px; color: var(--text-muted); margin-left: 0.5rem;"></i>
+                                        <input type="text" placeholder="Search events..." class="inner-search-input">
+                                    </div>
+                                    <div class="checkbox-list">
+                                        <!-- Dynamic -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group" id="primaryEventGroup" style="display: none;">
+                                <label for="primaryEvent">Primary Event</label>
+                                <select id="primaryEvent" required>
+                                    <option value="" disabled selected>Select Primary Event</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="travelDate">Tentative Travel Date</label>
+                                <input type="date" id="travelDate" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Engagement -->
+                    <div class="form-section">
+                        <h3><i data-lucide="message-square"></i> Engagement</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div class="form-group">
+                                <label for="reasonsSelection">Reason to Call</label>
+                                <select id="reasonsSelection" required>
+                                    <option value="" disabled selected>Select Reason</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="actionsRequired">Action Required</label>
+                                <select id="actionsRequired" required>
+                                    <option value="" disabled selected>Select Action</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="participantStatus">Current Participant Status</label>
+                                <select id="participantStatus" required>
+                                    <option value="" disabled selected>Select Status</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Admin & Remarks -->
+                    <div class="form-section">
+                        <h3><i data-lucide="clipboard"></i> Admin & Remarks</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div class="form-group">
+                                <label for="assignTo">Assigned To</label>
+                                <input type="text" id="assignTo" readonly placeholder="Auto-assigned"
+                                    style="background-color: rgba(255,255,255,0.5);">
+                            </div>
+                            <div class="form-group">
+                                <label for="remarks">Remarks</label>
+                                <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button type="submit" id="submitBtn" class="btn btn-primary" style="flex: 1; padding: 1rem;">Save Inquiry</button>
+                    <button type="button" id="clearBtn" class="btn btn-secondary" style="flex: 1; padding: 1rem;">Clear Form</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { supabase } from './js/supabaseClient.js';
+        import { authService } from './js/services/authService.js';
+        import { leadsService } from './js/services/leadsService.js';
+        import { settingsService } from './js/services/settingsService.js';
+        import { usersService } from './js/services/usersService.js';
+        import { activitiesService } from './js/services/activitiesService.js';
+
+        // State
+        let currentUser = null;
+        let currentFormOptions = { events: [], sources: [], reasons: [], actions: [], statuses: [] };
+
+        // DOM Elements
+        const leadForm = document.getElementById('leadForm');
+        const editingIdInput = document.getElementById('editingId');
+        const eventsContainer = document.getElementById('eventsInterestedContainer');
+        const primaryEventSelect = document.getElementById('primaryEvent');
+        const reasonsSelect = document.getElementById('reasonsSelection');
+        const actionsSelect = document.getElementById('actionsRequired');
+        const assignToInput = document.getElementById('assignTo');
+
+        // Helpers
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'x-circle' : 'info');
+            toast.innerHTML = `<i data-lucide="${icon}"></i><span class="toast-message">${message}</span>`;
+            container.appendChild(toast);
+            if (window.lucide) lucide.createIcons();
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function getMultiSelectValues(container) {
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function togglePrimaryEventVisibility() {
+            const selected = getMultiSelectValues(eventsContainer);
+            const group = document.getElementById('primaryEventGroup');
+            if (selected.length > 1) {
+                group.style.display = 'flex';
+                updatePrimaryOptions(selected);
+            } else {
+                group.style.display = 'none';
+                primaryEventSelect.value = selected[0] || '';
+            }
+        }
+
+        function updatePrimaryOptions(selected) {
+            const currentVal = primaryEventSelect.value;
+            primaryEventSelect.innerHTML = '<option value="" disabled>Select Primary Event</option>';
+            selected.forEach(ev => {
+                const opt = document.createElement('option');
+                opt.value = ev;
+                opt.textContent = ev;
+                primaryEventSelect.appendChild(opt);
+            });
+            if (selected.includes(currentVal)) primaryEventSelect.value = currentVal;
+            else primaryEventSelect.value = selected[0] || '';
+        }
+
+        async function loadOptions() {
+            const { data, success } = await settingsService.getFormOptions();
+            if (success) {
+                currentFormOptions = data;
+                populateSelect('leadSource', data.sources);
+                populateSelect('reasonsSelection', data.reasons);
+                populateSelect('actionsRequired', data.actions);
+                populateSelect('participantStatus', data.statuses);
+                renderEventCheckboxes(data.events);
+            }
+        }
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = id.includes('Status') || id.includes('Reason') || id.includes('Action') ? select.innerHTML : '<option value="" disabled selected>Select option</option>';
+            options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                select.appendChild(o);
+            });
+            if (currentVal) select.value = currentVal;
+        }
+
+        function renderEventCheckboxes(events) {
+            const list = eventsContainer.querySelector('.checkbox-list');
+            list.innerHTML = '';
+            events.forEach((ev, idx) => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="ev-${idx}" value="${ev}">
+                    <label for="ev-${idx}">
+                        <i data-lucide="check" class="check-icon"></i>
+                        ${ev}
+                    </label>
+                `;
+                list.appendChild(div);
+            });
+            
+            list.querySelectorAll('input').forEach(input => {
+                input.addEventListener('change', togglePrimaryEventVisibility);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Init
+        async function init() {
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            if (authError || !user) {
+                console.log("No user found, redirecting...");
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            document.body.classList.add('logged-in');
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            currentUser = { ...user, ...profile };
+            
+            await loadOptions();
+
+            // Check for edit ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('id');
+            if (editId) {
+                await loadLeadForEdit(editId);
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadLeadForEdit(id) {
+            const { data: lead, success } = await leadsService.getLeadById(id);
+            if (!success || !lead) return;
+
+            editingIdInput.value = lead.id;
+            document.getElementById('formTitle').innerText = "Edit Inquiry";
+            document.getElementById('submitBtn').innerText = "Update Inquiry";
+
+            document.getElementById('fullName').value = lead.full_name;
+            document.getElementById('phone').value = lead.phone;
+            document.getElementById('leadSource').value = lead.source;
+            document.getElementById('travelDate').value = lead.travel_date;
+            document.getElementById('participantStatus').value = lead.status;
+            document.getElementById('remarks').value = lead.remarks;
+            assignToInput.value = lead.profiles?.full_name || "Unassigned";
+
+            // Multi-select events
+            const checkboxes = eventsContainer.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = (lead.events_interested || []).includes(cb.value);
+            });
+            
+            togglePrimaryEventVisibility();
+            if (lead.primary_event) primaryEventSelect.value = lead.primary_event;
+
+            reasonsSelect.value = (lead.reasons_to_call && lead.reasons_to_call.length > 0) ? lead.reasons_to_call[0] : "";
+            actionsSelect.value = (lead.actions_required && lead.actions_required.length > 0) ? lead.actions_required[0] : "";
+        }
+
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const editingId = editingIdInput.value;
+                const phoneInput = document.getElementById('phone').value;
+                
+                if (!editingId) {
+                    const { data: existingLead, success: checkSuccess } = await leadsService.getLeadByPhone(phoneInput);
+                    if (checkSuccess && existingLead) {
+                        const selectedEvents = getMultiSelectValues(eventsContainer);
+                        let primaryVal = primaryEventSelect.value || selectedEvents[0];
+                        if (confirm("Lead exists. Send update request to Admin?")) {
+                            const res = await leadsService.createLeadRequest({
+                                phone: phoneInput,
+                                events_interested: selectedEvents,
+                                primary_event: primaryVal,
+                                requester_id: currentUser.id,
+                                status: 'pending'
+                            });
+                            if (res.success) {
+                                showToast("Request sent!", "success");
+                                setTimeout(() => window.location.href = 'index.html', 1500);
+                            }
+                        }
+                        return;
+                    }
+                }
+
+                const selectedEvents = getMultiSelectValues(eventsContainer);
+                let primaryVal = primaryEventSelect.value || selectedEvents[0];
+                
+                const leadData = {
+                    full_name: document.getElementById('fullName').value,
+                    phone: phoneInput,
+                    source: document.getElementById('leadSource').value,
+                    events_interested: selectedEvents,
+                    primary_event: primaryVal,
+                    travel_date: document.getElementById('travelDate').value,
+                    reasons_to_call: [reasonsSelect.value],
+                    status: document.getElementById('participantStatus').value,
+                    actions_required: [actionsSelect.value],
+                    assigned_to: null, 
+                    remarks: document.getElementById('remarks').value
+                };
+
+                // Auto-assignment logic
+                const reasonToCall = leadData.reasons_to_call[0];
+                const users = await usersService.getUsers();
+
+                if (reasonToCall === 'Payment/Refund') {
+                    const refundManager = users.data.find(u => u.role === 'Refund Manager');
+                    if (refundManager) leadData.assigned_to = refundManager.id;
+                } else if (reasonToCall === 'Special Camp') {
+                    const specialManager = users.data.find(u => u.role === 'Special Camp Manager');
+                    if (specialManager) leadData.assigned_to = specialManager.id;
+                }
+
+                if (!leadData.assigned_to) {
+                    const assignmentMap = await usersService.getEventAssignments();
+                    const assignedUserName = assignmentMap.data[leadData.primary_event];
+                    if (assignedUserName) {
+                        const userObj = users.data.find(u => u.full_name === assignedUserName);
+                        if (userObj) leadData.assigned_to = userObj.id;
+                    }
+                }
+
+                if (!leadData.assigned_to) {
+                    leadData.assigned_to = currentUser.id;
+                }
+
+                let result;
+                if (editingId) {
+                    result = await leadsService.updateLead(editingId, leadData);
+                } else {
+                    result = await leadsService.createLead(leadData);
+                    if (result.success) {
+                        await activitiesService.addActivity(result.data.id, 'status_change', `Lead created via separate page`);
+                    }
+                }
+
+                if (result.success) {
+                    showToast(`Inquiry ${editingId ? 'updated' : 'saved'}!`, "success");
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                } else {
+                    showToast("Error: " + result.error, "error");
+                }
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear form?')) leadForm.reset();
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

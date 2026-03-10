@@ -18,25 +18,12 @@ const navItems = document.querySelectorAll('.nav-item');
 const viewSections = document.querySelectorAll('.view-section');
 const pageTitle = document.getElementById('pageTitle');
 
-// Leads Form Elements
-const leadForm = document.getElementById('leadForm');
+// Leads List & Global Elements
 const leadsTableBody = document.getElementById('leadsTableBody');
 const recentLeadsTableBody = document.getElementById('recentLeadsTableBody');
 const staleLeadsTableBody = document.getElementById('staleLeadsTableBody');
-const clearBtn = document.getElementById('clearBtn');
-const cancelEditBtn = document.getElementById('cancelEditBtn');
-const formTitle = document.getElementById('formTitle');
-const submitBtn = document.getElementById('submitBtn');
-const editingIdInput = document.getElementById('editingId');
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
-
-// New Inquiry Specific Elements
-const primaryEventSelect = document.getElementById('primaryEvent');
-const assignToInput = document.getElementById('assignTo');
-const eventsContainer = document.getElementById('eventsInterestedContainer');
-const reasonsSelect = document.getElementById('reasonsSelection');
-const actionsSelect = document.getElementById('actionsRequired');
 
 // Dashboard Stat Elements
 const totalLeadsCount = document.getElementById('totalLeadsCount');
@@ -54,11 +41,8 @@ const addNoteBtn = document.getElementById('addNoteBtn');
 const detailStatusSelect = document.getElementById('detailStatusSelect');
 const editLeadFromDetailBtn = document.getElementById('editLeadFromDetailBtn');
 
-// Sidebar Elements
-const leadSidebar = document.getElementById('leadSidebar');
-const sidebarOverlay = document.getElementById('sidebarOverlay');
-const openSidebarBtn = document.getElementById('openSidebarBtn');
-const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+// Floating Action Button
+const addLeadFab = document.getElementById('addLeadFab');
 
 // Bulk Import Elements
 const bulkImportBtn = document.getElementById('bulkImportBtn');
@@ -98,18 +82,9 @@ function showView(viewId, title) {
     const isLogin = viewId === 'login-view';
     const sidebar = document.querySelector('.sidebar');
     const topHeader = document.querySelector('.top-header');
-    const leadSidebar = document.getElementById('leadSidebar');
 
     if (sidebar) sidebar.style.display = isLogin ? 'none' : 'flex';
     if (topHeader) topHeader.style.display = isLogin ? 'none' : 'flex';
-    if (leadSidebar) leadSidebar.style.display = isLogin ? 'none' : 'block';
-
-    // Toggle FAB visibility
-    if (viewId === 'dashboard-view' || viewId === 'leads-view') {
-        if (openSidebarBtn) openSidebarBtn.style.display = 'flex';
-    } else {
-        if (openSidebarBtn) openSidebarBtn.style.display = 'none';
-    }
 
     navItems.forEach(item => {
         item.classList.remove('active');
@@ -179,26 +154,37 @@ logoutBtn.addEventListener('click', async () => {
 async function checkAuth() {
     console.log("Checking auth state...");
     const { data: user, success } = await authService.getCurrentUser();
-    console.log("Current user:", user);
+    
     if (success && user) {
-        // Ensure profile exists (in case trigger missed it)
+        document.body.classList.add('logged-in');
         await usersService.ensureProfile(user);
-        
         currentUser = user;
         applyPermissions();
         loginView.classList.remove('active');
         logoutBtn.style.display = 'block';
         
-        // Initial Data Loads
         await loadInitialData();
         showView('dashboard-view', 'Dashboard');
         renderDashboard();
-        if (window.lucide) lucide.createIcons();
     } else {
+        document.body.classList.remove('logged-in');
         currentUser = null;
         showView('login-view', 'Login');
     }
 }
+
+// Global Auth Listener
+authService.onAuthChange((event, session) => {
+    console.log("Auth Event:", event);
+    if (event === 'SIGNED_IN') checkAuth();
+    if (event === 'SIGNED_OUT') {
+        document.body.classList.remove('logged-in');
+        location.reload();
+    }
+});
+
+// Initial call
+checkAuth();
 
 async function loadInitialData() {
     const [optionsRes, assignmentsRes] = await Promise.all([
@@ -209,11 +195,11 @@ async function loadInitialData() {
     if (optionsRes.success) {
         // Alphabetically sort all categories
         currentFormOptions = {
-            events: (optionsRes.data.events || []).sort(),
-            sources: (optionsRes.data.sources || []).sort(),
-            reasons: (optionsRes.data.reasons || []).sort(),
-            actions: (optionsRes.data.actions || []).sort(),
-            statuses: (optionsRes.data.statuses || []).sort()
+            events: (optionsRes.data.events || []).sort((a, b) => a.localeCompare(b)),
+            sources: (optionsRes.data.sources || []).sort((a, b) => a.localeCompare(b)),
+            reasons: (optionsRes.data.reasons || []).sort((a, b) => a.localeCompare(b)),
+            actions: (optionsRes.data.actions || []).sort((a, b) => a.localeCompare(b)),
+            statuses: (optionsRes.data.statuses || []).sort((a, b) => a.localeCompare(b))
         };
     }
     if (assignmentsRes.success) currentEventAssignments = assignmentsRes.data;
@@ -744,154 +730,24 @@ editLeadFromDetailBtn.addEventListener('click', () => {
 });
 
 // --- Form & Action Handlers ---
-leadForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    try {
-        let editingId = editingIdInput.value;
-        const phoneInput = document.getElementById('phone').value;
+// --- Filters ---
+if (searchInput) searchInput.addEventListener('input', renderLeads);
+if (statusFilter) statusFilter.addEventListener('change', renderLeads);
+if (dateFromFilter) dateFromFilter.addEventListener('change', renderLeads);
+if (dateToFilter) dateToFilter.addEventListener('change', renderLeads);
 
-        if (!editingId) {
-            // Check for duplicate phone number
-            const { data: existingLead, success: checkSuccess } = await leadsService.getLeadByPhone(phoneInput);
-            console.log("Duplicate check:", { existingLead, checkSuccess });
-            if (checkSuccess && existingLead) {
-                const selectedEvents = getMultiSelectValues(eventsContainer);
-                let primaryEventValue = document.getElementById('primaryEvent').value;
-                if (selectedEvents.length === 1) primaryEventValue = selectedEvents[0];
-                if (!primaryEventValue && selectedEvents.length > 0) primaryEventValue = selectedEvents[0];
-
-                const wantRequest = confirm("Lead with this number already exists. Would you like to send a request to Admin to update their event interests?");
-                if (wantRequest) {
-                    const reqObj = {
-                        phone: phoneInput,
-                        events_interested: selectedEvents,
-                        primary_event: primaryEventValue,
-                        requester_id: currentUser.id,
-                        status: 'pending'
-                    };
-                    const reqRes = await leadsService.createLeadRequest(reqObj);
-                    if (reqRes.success) {
-                        showToast("Request sent to Admin!", "success");
-                        resetForm();
-                    } else {
-                        showToast("Error sending request: " + reqRes.error, "error");
-                    }
-                } else {
-                    resetForm();
-                    window.viewLeadDetail(existingLead.id);
-                }
-                return;
-            }
-        }
-
-        // If only 1 event selected, auto-set primary_event
-        const selectedEvents = getMultiSelectValues(eventsContainer);
-        let primaryEventValue = document.getElementById('primaryEvent').value;
-        if (selectedEvents.length === 1) {
-            primaryEventValue = selectedEvents[0];
-        }
-
-        if (!primaryEventValue && selectedEvents.length > 0) {
-            primaryEventValue = selectedEvents[0];
-        }
-
-        const leadData = {
-            full_name: document.getElementById('fullName').value,
-            phone: phoneInput,
-            source: document.getElementById('leadSource').value,
-            events_interested: selectedEvents,
-            primary_event: primaryEventValue,
-            travel_date: document.getElementById('travelDate').value,
-            reasons_to_call: reasonsSelect.value ? [reasonsSelect.value] : [], 
-            status: document.getElementById('participantStatus').value,
-            actions_required: actionsSelect.value ? [actionsSelect.value] : [],
-            assigned_to: null, // Logic below
-            remarks: document.getElementById('remarks').value
-        };
-
-        console.log("Lead data to save:", leadData);
-
-        // Auto-assignment logic
-        const reasonToCall = leadData.reasons_to_call && leadData.reasons_to_call[0];
-        const users = await usersService.getUsers();
-
-        if (reasonToCall === 'Payment/Refund') {
-            const refundManager = users.data.find(u => u.role === 'Refund Manager');
-            if (refundManager) leadData.assigned_to = refundManager.id;
-        } else if (reasonToCall === 'Special Camp') {
-            const specialManager = users.data.find(u => u.role === 'Special Camp Manager');
-            if (specialManager) leadData.assigned_to = specialManager.id;
-        }
-
-        // Fallback to primary event assignment if still unassigned
-        if (!leadData.assigned_to) {
-            const assignmentMap = await usersService.getEventAssignments();
-            const assignedUser = assignmentMap.data[leadData.primary_event];
-            if (assignedUser) {
-                const userObj = users.data.find(u => u.full_name === assignedUser);
-                if (userObj) leadData.assigned_to = userObj.id;
-            }
-        }
-
-        // Final fallback: assign to current user (admin) if still unassigned
-        if (!leadData.assigned_to && currentUser) {
-            leadData.assigned_to = currentUser.id;
-        }
-
-        console.log("Final lead data:", leadData);
-        let result;
-
-        if (editingId) {
-            result = await leadsService.updateLead(editingId, leadData);
-        } else {
-            result = await leadsService.createLead(leadData);
-            if (result.success) {
-                await activitiesService.addActivity(result.data.id, 'status_change', `Lead created with status "${leadData.status}"`);
-            }
-        }
-
-        console.log("Save result:", result);
-
-        if (result.success) {
-            showToast(`Inquiry ${editingId ? 'updated' : 'created'} successfully!`, "success");
-            resetForm();
-            renderDashboard();
-            renderLeads();
-        } else {
-            showToast("Error saving inquiry: " + result.error, "error");
-        }
-    } catch (err) {
-        console.error("Form submission error:", err);
-        showToast("Error: " + err.message, "error");
-    }
-});
+if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        statusFilter.value = 'All';
+        dateFromFilter.value = '';
+        dateToFilter.value = '';
+        renderLeads();
+    });
+}
 
 window.editLead = async (id) => {
-    const { data: lead, success } = await leadsService.getLeadById(id);
-    if (!success || !lead) return;
-
-    editingIdInput.value = lead.id;
-    document.getElementById('fullName').value = lead.full_name;
-    document.getElementById('phone').value = lead.phone;
-    document.getElementById('leadSource').value = lead.source;
-    document.getElementById('primaryEvent').value = lead.primary_event;
-    document.getElementById('travelDate').value = lead.travel_date;
-    document.getElementById('participantStatus').value = lead.status;
-    document.getElementById('remarks').value = lead.remarks;
-    
-    // Set Assigned To display (readonly)
-    assignToInput.value = lead.profiles?.full_name || "Unassigned";
-
-    setMultiSelectValues(eventsContainer, lead.events_interested || []);
-    reasonsSelect.value = (lead.reasons_to_call && lead.reasons_to_call.length > 0) ? lead.reasons_to_call[0] : "";
-    actionsSelect.value = (lead.actions_required && lead.actions_required.length > 0) ? lead.actions_required[0] : "";
-
-    formTitle.innerText = "Edit Inquiry";
-    submitBtn.innerText = "Update Inquiry";
-    cancelEditBtn.style.display = "inline-block";
-    togglePrimaryEventVisibility();
-    openLeadSidebar();
+    window.location.href = `new-inquiry.html?id=${id}`;
 };
 
 function resetForm() {

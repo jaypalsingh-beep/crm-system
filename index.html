@@ -132,7 +132,7 @@
                 </div>
 
                 <!-- Dashboard View -->
-                <div id="dashboard-view" class="view-section active">
+                <div id="dashboard-view" class="view-section">
                     <div class="summary-grid" id="analyticsDashboard">
                         <!-- Cards added via JS -->
                     </div>
@@ -561,132 +561,19 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
         </main>
-
-        <!-- Right Sidebar (Lead Form) -->
-        <aside class="glass-sidebar" id="leadSidebar">
-            <h2 id="formTitle">New Inquiry</h2>
-            <p style="margin-bottom: 1.5rem; color: var(--md-on-surface-variant); font-size: 0.9rem;">Fill in the
-                details to create or update an inquiry record.</p>
-
-            <form id="leadForm">
-                <input type="hidden" id="editingId">
-                <div style="display: flex; flex-direction: column; gap: 0rem;">
-                    <!-- Section: Lead Info -->
-                    <div class="form-section">
-                        <h3><i data-lucide="user"></i> Lead Information</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="leadSource">Lead Source</label>
-                                <select id="leadSource" required>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="fullName">Full Name</label>
-                                <input type="text" id="fullName" required placeholder="Enter full name">
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" required placeholder="Enter phone number">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Event Details -->
-                    <div class="form-section">
-                        <h3><i data-lucide="map-pin"></i> Event Details</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label>Events Interested In</label>
-                                <div class="multi-select-container" id="eventsInterestedContainer">
-                                    <div class="multi-select-search">
-                                        <i data-lucide="search"
-                                            style="width: 16px; color: var(--text-muted); margin-left: 0.5rem;"></i>
-                                        <input type="text" placeholder="Search events..." class="inner-search-input">
-                                    </div>
-                                    <div class="checkbox-list">
-                                        <!-- Dynamic -->
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group" id="primaryEventGroup" style="display: none;">
-                                <label for="primaryEvent">Primary Event</label>
-                                <select id="primaryEvent" required>
-                                    <option value="" disabled selected>Select Primary Event</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="travelDate">Tentative Travel Date</label>
-                                <input type="date" id="travelDate" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Engagement -->
-                    <div class="form-section">
-                        <h3><i data-lucide="message-square"></i> Engagement</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="reasonsSelection">Reason to Call</label>
-                                <select id="reasonsSelection" required>
-                                    <option value="" disabled selected>Select Reason</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="actionsRequired">Action Required</label>
-                                <select id="actionsRequired" required>
-                                    <option value="" disabled selected>Select Action</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="participantStatus">Current Participant Status</label>
-                                <select id="participantStatus" required>
-                                    <option value="" disabled selected>Select Status</option>
-                                    <!-- Dynamic -->
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Admin & Remarks -->
-                    <div class="form-section">
-                        <h3><i data-lucide="clipboard"></i> Admin & Remarks</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <div class="form-group">
-                                <label for="assignTo">Assigned To</label>
-                                <input type="text" id="assignTo" readonly placeholder="Auto-assigned"
-                                    style="background-color: rgba(255,255,255,0.5);">
-                            </div>
-                            <div class="form-group">
-                                <label for="remarks">Remarks</label>
-                                <textarea id="remarks" rows="3" placeholder="Additional notes..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-actions" style="margin-top: 2rem; flex-direction: column; gap: 0.75rem;">
-                    <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%;">Save
-                        Inquiry</button>
-                    <button type="button" id="clearBtn" class="btn btn-secondary" style="width: 100%;">Clear
-                        Form</button>
-                    <button type="button" id="cancelEditBtn" class="btn btn-secondary"
-                        style="display: none; width: 100%;">Cancel Edit</button>
-                </div>
-            </form>
-        </aside>
     </div>
 
     <!-- Floating Action Button -->
-
+    <a href="new-inquiry.html" id="addLeadFab" class="fab" title="Add New Inquiry">
+        <i data-lucide="plus"></i>
+    </a>
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
-    <script type="module" src="app.js?v=11"></script>
+    <script type="module" src="app.js?v=13"></script>
 </body>
 
 </html>
