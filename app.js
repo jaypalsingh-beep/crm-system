@@ -174,6 +174,14 @@ function handleHashRouting() {
     if (hash) {
         const hashPage = hash.split('?')[0];
         
+        // Security Check: Only Admin can see users-view and settings-view
+        if ((hashPage === 'users-view' || hashPage === 'settings-view' || hashPage === 'lead-requests-view') && currentUser.role !== 'Admin') {
+            console.warn("Unauthorized access attempt to:", hashPage);
+            showToast("You don't have permission to access this page.", "error");
+            window.location.hash = 'dashboard-view';
+            return;
+        }
+
         // Only switch if it's different from current view
         if (activeView && activeView.id === hashPage) return;
 
@@ -843,12 +851,22 @@ async function renderUsers() {
         return;
     }
 
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    
+    // Hide password header if not admin
+    const headers = document.querySelectorAll('#users-view table thead th');
+    headers.forEach(th => {
+        if (th.innerText === 'Password') th.style.display = isAdmin ? '' : 'none';
+    });
+
     usersTableBody.innerHTML = '';
     users.forEach(user => {
         const displayName = user.full_name || (user.email ? user.email.split('@')[0] : 'Unknown');
         const initial = displayName.substring(0,2).toUpperCase();
         
         const tr = document.createElement('tr');
+        const passwordDisplay = isAdmin ? `<code style="background: var(--bg-main); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85rem;">${user.password || '(not set)'}</code>` : '******';
+
         tr.innerHTML = `
             <td>
                 <div class="user-cell">
@@ -865,7 +883,7 @@ async function renderUsers() {
                     ${(user.event_assignments || []).map(e => `<span class="badge status-interested">${e.event_value}</span>`).join('')}
                 </div>
             </td>
-            <td><code style="background: var(--bg-main); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85rem;">${user.password || '(not set)'}</code></td>
+            <td style="${isAdmin ? '' : 'display: none;'}">${passwordDisplay}</td>
             <td>
                 <div class="action-btns">
                     <button class="btn-icon btn-edit" title="Edit User"><i data-lucide="edit-3"></i></button>

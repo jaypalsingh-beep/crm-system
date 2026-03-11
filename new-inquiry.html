@@ -313,10 +313,17 @@
                 }
             }
 
-            // 3. Fallback to current user
-            if (!assignedToId && currentUser) {
-                assignedToId = currentUser.id;
-                assignedToName = currentUser.full_name || currentUser.email;
+            // 3. Fallback to Admin (instead of just current user)
+            if (!assignedToId) {
+                const adminUser = allUsers.find(u => u.role === 'Admin');
+                if (adminUser) {
+                    assignedToId = adminUser.id;
+                    assignedToName = adminUser.full_name;
+                } else if (currentUser) {
+                    // Last resort fallback
+                    assignedToId = currentUser.id;
+                    assignedToName = currentUser.full_name || currentUser.email;
+                }
             }
 
             assignToInput.value = assignedToName;
@@ -425,11 +432,8 @@
             const currentUserDisplayName = document.getElementById('currentUserDisplayName');
             const currentUserAvatar = document.getElementById('currentUserAvatar');
 
-            if (currentUser.role === 'Executive') {
+            if (currentUser.role !== 'Admin') {
                 if (navTeam) navTeam.style.display = 'none';
-                if (navRequests) navRequests.style.display = 'none';
-                if (navSettings) navSettings.style.display = 'none';
-            } else if (currentUser.role === 'Manager') {
                 if (navRequests) navRequests.style.display = 'none';
                 if (navSettings) navSettings.style.display = 'none';
             }
