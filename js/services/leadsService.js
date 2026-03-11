@@ -133,9 +133,15 @@ export const leadsService = {
 
     async createLead(leadData) {
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const dataToInsert = { 
+                ...leadData, 
+                created_by: user ? user.id : leadData.created_by 
+            };
+
             const { data, error } = await supabase
                 .from('leads')
-                .insert([leadData])
+                .insert([dataToInsert])
                 .select();
 
             if (error) throw error;

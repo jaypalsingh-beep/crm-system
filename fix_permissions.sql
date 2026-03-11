@@ -41,7 +41,18 @@ CREATE POLICY "Only admins can modify form_options" ON form_options
     USING (get_my_role() = 'Admin');
 
 -- 4. Update Leads Policies
+-- First, ensure created_by has a default value so RLS policies work even if app doesn't send it
+ALTER TABLE public.leads ALTER COLUMN created_by SET DEFAULT auth.uid();
+
+-- Drop ANY potential policy that might be blocking inserts
 DROP POLICY IF EXISTS "Viewing leads based on role" ON leads;
+DROP POLICY IF EXISTS "Inserting leads is allowed for all auth users" ON leads;
+DROP POLICY IF EXISTS "Updating leads based on role" ON leads;
+DROP POLICY IF EXISTS "Deleting leads is for Admins only" ON leads;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON leads;
+DROP POLICY IF EXISTS "Allow authenticated inserts" ON leads;
+DROP POLICY IF EXISTS "Allow all authenticated inserts" ON leads;
+
 CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT 
     USING (
         get_my_role() IN ('Admin', 'Manager') OR 
@@ -54,18 +65,16 @@ CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT
         )
     );
 
-DROP POLICY IF EXISTS "Inserting leads is allowed for all auth users" ON leads;
 CREATE POLICY "Inserting leads is allowed for all auth users" ON leads FOR INSERT 
     WITH CHECK (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS "Updating leads based on role" ON leads;
 CREATE POLICY "Updating leads based on role" ON leads FOR UPDATE 
     USING (
         get_my_role() IN ('Admin', 'Manager') OR 
-        assigned_to = auth.uid()
+        assigned_to = auth.uid() OR
+        created_by = auth.uid()
     );
 
-DROP POLICY IF EXISTS "Deleting leads is for Admins only" ON leads;
 CREATE POLICY "Deleting leads is for Admins only" ON leads FOR DELETE 
     USING (get_my_role() = 'Admin');
 
