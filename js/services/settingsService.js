@@ -15,11 +15,11 @@ export const settingsService = {
             if (error) throw error;
 
             const grouped = {
-                events: data.filter(d => d.category === 'events').map(d => d.value),
-                sources: data.filter(d => d.category === 'sources').map(d => d.value),
-                reasons: data.filter(d => d.category === 'reasons').map(d => d.value),
-                actions: data.filter(d => d.category === 'actions').map(d => d.value),
-                statuses: data.filter(d => d.category === 'statuses').map(d => d.value)
+                events: data.filter(d => d.category === 'events').map(d => d.value).sort((a, b) => a.localeCompare(b)),
+                sources: data.filter(d => d.category === 'sources').map(d => d.value).sort((a, b) => a.localeCompare(b)),
+                reasons: data.filter(d => d.category === 'reasons').map(d => d.value).sort((a, b) => a.localeCompare(b)),
+                actions: data.filter(d => d.category === 'actions').map(d => d.value).sort((a, b) => a.localeCompare(b)),
+                statuses: data.filter(d => d.category === 'statuses').map(d => d.value).sort((a, b) => a.localeCompare(b))
             };
 
             return { data: grouped, success: true };

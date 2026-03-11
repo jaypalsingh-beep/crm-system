@@ -27,7 +27,7 @@ export const leadsService = {
         try {
             const { data, error } = await supabase
                 .from('lead_requests')
-                .select('*')
+                .select('*, requester:profiles(full_name)')
                 .eq('status', 'pending');
             if (error) throw error;
             return { data, success: true };
@@ -44,6 +44,7 @@ export const leadsService = {
                 .from('leads')
                 .update(leadUpdates)
                 .eq('phone', leadUpdates.phone)
+                .select()
                 .single();
             if (leadErr) throw leadErr;
             // Update request status
@@ -51,6 +52,7 @@ export const leadsService = {
                 .from('lead_requests')
                 .update({ status: 'approved' })
                 .eq('id', requestId)
+                .select()
                 .single();
             if (reqErr) throw reqErr;
             return { data: { lead, request: req }, success: true };
@@ -66,6 +68,7 @@ export const leadsService = {
                 .from('lead_requests')
                 .update({ status: 'rejected' })
                 .eq('id', requestId)
+                .select()
                 .single();
             if (error) throw error;
             return { data, success: true };
@@ -179,6 +182,17 @@ export const leadsService = {
                 .eq('phone', phone)
                 .maybeSingle();
 
+            if (error) throw error;
+            return { data, success: true };
+        } catch (error) {
+            return { error: error.message, success: false };
+        }
+    },
+
+    /** Check if a lead exists by phone number using an RPC (bypasses RLS filters) */
+    async checkLeadExists(phone) {
+        try {
+            const { data, error } = await supabase.rpc('check_lead_exists_by_phone', { phone_number: phone });
             if (error) throw error;
             return { data, success: true };
         } catch (error) {

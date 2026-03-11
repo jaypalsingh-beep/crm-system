@@ -361,10 +361,8 @@
             const list = eventsContainer.querySelector('.checkbox-list');
             list.innerHTML = '';
             
-            // Sort events alphabetically
-            const sortedEvents = [...events].sort((a, b) => a.localeCompare(b));
-            
-            sortedEvents.forEach((ev, idx) => {
+            // Event list is already sorted by the service
+            events.forEach((ev, idx) => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
                 div.innerHTML = `
@@ -492,8 +490,8 @@
                 const phoneInput = document.getElementById('phone').value;
                 
                 if (!editingId) {
-                    const { data: existingLead, success: checkSuccess } = await leadsService.getLeadByPhone(phoneInput);
-                    if (checkSuccess && existingLead) {
+                    const { data: leadExists, success: checkSuccess } = await leadsService.checkLeadExists(phoneInput);
+                    if (checkSuccess && leadExists) {
                         const selectedEvents = getMultiSelectValues(eventsContainer);
                         let primaryVal = primaryEventSelect.value || selectedEvents[0];
                         if (confirm("Lead exists. Send update request to Admin?")) {

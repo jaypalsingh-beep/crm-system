@@ -98,20 +98,13 @@ navItems.forEach(item => {
     item.addEventListener('click', () => {
         if (!currentUser) return; // Prevent navigation if not logged in
         const page = item.getAttribute('data-page');
-        showView(page, item.innerText.replace(/[^\w\s]|_/g, "").trim());
-
-        if (page === 'dashboard-view') renderDashboard();
-        if (page === 'leads-view') renderLeads();
-        if (page === 'users-view') renderUsers();
-        if (page === 'settings-view') renderSettings();
-        if (page === 'lead-requests-view') renderLeadRequests();
+        
+        // Use hash-based navigation
+        window.location.hash = page;
 
         // Close mobile menu if open
         const sidebarNav = document.querySelector('.sidebar-nav');
         if (sidebarNav) sidebarNav.classList.remove('active');
-        
-        // Refresh icons after view change
-        if (window.lucide) lucide.createIcons();
     });
 });
 
@@ -162,24 +155,47 @@ async function checkAuth() {
         currentUser = user;
         applyPermissions();
         
-        // Only redirect to dashboard if we are currently on the login view or no view is active
-        const activeView = document.querySelector('.view-section.active');
-        if (!activeView || activeView.id === 'login-view') {
-            loginView.classList.remove('active');
-            logoutBtn.style.display = 'block';
-            await loadInitialData();
-            showView('dashboard-view', 'Dashboard');
-            renderDashboard();
-        } else {
-            // Just refresh data without forcing a view change
-            await loadInitialData();
-        }
+        logoutBtn.style.display = 'block';
+        await loadInitialData();
+        
+        // Handle Routing
+        handleHashRouting();
     } else {
         document.body.classList.remove('logged-in');
         currentUser = null;
         showView('login-view', 'Login');
     }
 }
+
+function handleHashRouting() {
+    const hash = window.location.hash.substring(1);
+    const activeView = document.querySelector('.view-section.active');
+    
+    if (hash) {
+        const hashPage = hash.split('?')[0];
+        
+        // Only switch if it's different from current view
+        if (activeView && activeView.id === hashPage) return;
+
+        const navItem = Array.from(navItems).find(item => item.getAttribute('data-page') === hashPage);
+        const title = navItem ? navItem.innerText.replace(/[^\w\s]|_/g, "").trim() : "";
+        
+        showView(hashPage, title);
+        
+        if (hashPage === 'dashboard-view') renderDashboard();
+        if (hashPage === 'leads-view') renderLeads();
+        if (hashPage === 'users-view') renderUsers();
+        if (hashPage === 'settings-view') renderSettings();
+        if (hashPage === 'lead-requests-view') renderLeadRequests();
+        
+        if (window.lucide) lucide.createIcons();
+    } else if (!activeView || activeView.id === 'login-view') {
+        showView('dashboard-view', 'Dashboard');
+        renderDashboard();
+    }
+}
+
+window.addEventListener('hashchange', handleHashRouting);
 
 // Global Auth Listener
 authService.onAuthChange((event, session) => {
@@ -201,14 +217,7 @@ async function loadInitialData() {
     ]);
     
     if (optionsRes.success) {
-        // Alphabetically sort all categories
-        currentFormOptions = {
-            events: (optionsRes.data.events || []).sort((a, b) => a.localeCompare(b)),
-            sources: (optionsRes.data.sources || []).sort((a, b) => a.localeCompare(b)),
-            reasons: (optionsRes.data.reasons || []).sort((a, b) => a.localeCompare(b)),
-            actions: (optionsRes.data.actions || []).sort((a, b) => a.localeCompare(b)),
-            statuses: (optionsRes.data.statuses || []).sort((a, b) => a.localeCompare(b))
-        };
+        currentFormOptions = optionsRes.data;
     }
     if (assignmentsRes.success) currentEventAssignments = assignmentsRes.data;
     
@@ -834,11 +843,13 @@ async function renderUsers() {
         return;
     }
 
-    usersTableBody.innerHTML = users.map(user => {
+    usersTableBody.innerHTML = '';
+    users.forEach(user => {
         const displayName = user.full_name || (user.email ? user.email.split('@')[0] : 'Unknown');
         const initial = displayName.substring(0,2).toUpperCase();
-        return `
-        <tr>
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
             <td>
                 <div class="user-cell">
                     <div class="user-avatar-sm">${initial}</div>
@@ -854,14 +865,29 @@ async function renderUsers() {
                     ${(user.event_assignments || []).map(e => `<span class="badge status-interested">${e.event_value}</span>`).join('')}
                 </div>
             </td>
+            <td><code style="background: var(--bg-main); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85rem;">${user.password || '(not set)'}</code></td>
             <td>
                 <div class="action-btns">
-                    <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit User"><i data-lucide="edit-3"></i></button>
-                    <button class="btn-icon btn-delete" onclick="deleteUser('${user.id}')" ${currentUser.role !== 'Admin' ? 'disabled style="opacity:0.3;"' : ''} title="Delete User"><i data-lucide="trash-2"></i></button>
+                    <button class="btn-icon btn-edit" title="Edit User"><i data-lucide="edit-3"></i></button>
+                    <button class="btn-icon btn-delete" title="Delete User"><i data-lucide="trash-2"></i></button>
                 </div>
             </td>
-        </tr>
-    `}).join('') || '<tr><td colspan="4" style="text-align:center; padding: 2rem;">No team members found</td></tr>';
+        `;
+        
+        const editBtn = tr.querySelector('.btn-edit');
+        const deleteBtn = tr.querySelector('.btn-delete');
+        
+        editBtn.addEventListener('click', () => editUser(user.id));
+        
+        if (currentUser.role === 'Admin') {
+            deleteBtn.addEventListener('click', () => deleteUser(user.id));
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.3';
+        }
+        
+        usersTableBody.appendChild(tr);
+    });
     
     if (window.lucide) lucide.createIcons();
 }
@@ -885,14 +911,18 @@ if (userForm) {
 
         let result;
         if (editingId) {
-            result = await usersService.updateProfile(editingId, { full_name: name, role });
+            result = await usersService.updateProfile(editingId, { full_name: name, role, password: generatedPass });
             if (result.success) {
+                // If the user changed their OWN password, update it in auth too
+                if (editingId === currentUser.id) {
+                    await authService.updateUserPassword(editingId, generatedPass);
+                }
                 await usersService.saveEventAssignments(editingId, assignedEvents);
                 showToast("User updated successfully!");
             }
         } else {
             // Direct User Creation
-            const signupRes = await authService.signUp(email, generatedPass, { full_name: name, role });
+            const signupRes = await authService.signUp(email, generatedPass, { full_name: name, role, password: generatedPass });
             if (signupRes.success) {
                 const newUser = signupRes.data.user;
                 await usersService.saveEventAssignments(newUser.id, assignedEvents);
@@ -934,6 +964,7 @@ window.editUser = async (id) => {
     document.getElementById('userEmail').value = user.email;
     document.getElementById('userEmail').setAttribute('disabled', true);
     userRoleInput.value = user.role || "Executive";
+    document.getElementById('userPassword').value = user.password || "";
     
     renderUserEventOptions(user.id);
     const events = (user.event_assignments || []).map(a => a.event_value);
@@ -948,6 +979,7 @@ window.editUser = async (id) => {
 function resetUserForm() {
     userForm.reset();
     editingUserIdInput.value = "";
+    document.getElementById('userEmail').removeAttribute('disabled');
     userFormTitle.innerText = "Add New User";
     userSubmitBtn.innerText = "Save User";
     renderUserEventOptions();
@@ -973,16 +1005,24 @@ async function renderSettings() {
 
 function renderSettingsList(type, container) {
     if (!container) return;
-    container.innerHTML = currentFormOptions[type].map(opt => `
-        <div class="settings-item">
+    container.innerHTML = '';
+    
+    currentFormOptions[type].forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'settings-item';
+        item.innerHTML = `
             <span class="settings-item-text">${opt}</span>
             <div class="settings-item-actions">
-                <button class="btn-icon btn-delete" onclick="deleteOption('${type}', '${opt}')" title="Remove Option">
+                <button class="btn-icon btn-delete" title="Remove Option">
                     <i data-lucide="x"></i>
                 </button>
             </div>
-        </div>
-    `).join('');
+        `;
+        
+        const deleteBtn = item.querySelector('.btn-delete');
+        deleteBtn.addEventListener('click', () => deleteOption(type, opt));
+        container.appendChild(item);
+    });
     
     if (window.lucide) lucide.createIcons();
 }
@@ -1032,27 +1072,31 @@ async function renderLeadRequests() {
         container.innerHTML = '<tr><td colspan="6" style="text-align:center;">No pending requests found.</td></tr>';
         return;
     }
-    
-    container.innerHTML = requests.map(req => {
+    container.innerHTML = '';
+    requests.forEach(req => {
         const date = new Date(req.created_at).toLocaleDateString('en-IN');
         const events = Array.isArray(req.events_interested) ? req.events_interested.join(', ') : req.events_interested;
         
-        return `
-            <tr>
-                <td>${date}</td>
-                <td>${req.phone}</td>
-                <td>${events}</td>
-                <td>${req.primary_event}</td>
-                <td>${req.requester_id === currentUser.id ? 'You' : 'Another User'}</td>
-                <td>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.phone}', ${JSON.stringify(req.events_interested).replace(/"/g, '&quot;')}, '${req.primary_event}')">Approve</button>
-                        <button class="btn btn-secondary btn-sm" style="background: var(--error); color: white;" onclick="rejectRequest('${req.id}')">Reject</button>
-                    </div>
-                </td>
-            </tr>
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${date}</td>
+            <td>${req.phone}</td>
+            <td>${events}</td>
+            <td>${req.primary_event}</td>
+            <td>${req.requester?.full_name || 'System'}</td>
+            <td>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary btn-sm btn-approve">Approve</button>
+                    <button class="btn btn-secondary btn-sm btn-reject" style="background: var(--error); color: white;">Reject</button>
+                </div>
+            </td>
         `;
-    }).join('');
+        
+        tr.querySelector('.btn-approve').addEventListener('click', () => approveRequest(req.id, req.phone, req.events_interested, req.primary_event));
+        tr.querySelector('.btn-reject').addEventListener('click', () => rejectRequest(req.id));
+        
+        container.appendChild(tr);
+    });
 }
 
 window.approveRequest = async (id, phone, events, primaryEvent) => {

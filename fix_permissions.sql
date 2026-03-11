@@ -12,16 +12,25 @@ $$ LANGUAGE sql SECURITY DEFINER;
 ALTER TABLE IF EXISTS public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
 ALTER TABLE IF EXISTS public.profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('Admin', 'Manager', 'Executive', 'Refund Manager', 'Special Camp Manager'));
 
+-- Add password column for Admin visibility (Insecure but requested)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password TEXT;
+
 
 -- 2. Update Profiles Policies
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Admins and users can update profiles" ON profiles;
+CREATE POLICY "Admins and users can update profiles" ON profiles FOR UPDATE 
+    USING (auth.uid() = id OR get_my_role() = 'Admin');
 
 DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
-CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id OR get_my_role() = 'Admin');
+
+DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
+CREATE POLICY "Admins can delete profiles" ON profiles FOR DELETE 
+    USING (get_my_role() = 'Admin');
 
 -- 3. Update Form Options Policies
 DROP POLICY IF EXISTS "Form options are viewable by everyone" ON form_options;
@@ -93,15 +102,24 @@ CREATE TABLE IF NOT EXISTS lead_requests (
 ALTER TABLE lead_requests ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can create lead requests" ON lead_requests;
-CREATE POLICY "Users can create lead requests" ON lead_requests FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can create lead requests" ON lead_requests FOR INSERT WITH CHECK (auth.uid() = requester_id);
 
 DROP POLICY IF EXISTS "Admins can view lead requests" ON lead_requests;
-CREATE POLICY "Admins can view lead requests" ON lead_requests FOR SELECT 
-USING (get_my_role() = 'Admin');
+DROP POLICY IF EXISTS "Users can view own lead requests" ON lead_requests;
+CREATE POLICY "Users can view own lead requests" ON lead_requests FOR SELECT 
+USING (get_my_role() = 'Admin' OR auth.uid() = requester_id);
 
 DROP POLICY IF EXISTS "Admins can update lead requests" ON lead_requests;
 CREATE POLICY "Admins can update lead requests" ON lead_requests FOR UPDATE 
 USING (get_my_role() = 'Admin');
+
+-- 9. Helper for duplicate check (Bypasses row-level data access for searching)
+CREATE OR REPLACE FUNCTION public.check_lead_exists_by_phone(phone_number TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (SELECT 1 FROM public.leads WHERE phone = phone_number);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Re-apply grants at the end
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
