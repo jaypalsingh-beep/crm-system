@@ -350,6 +350,22 @@
 
             if (usersRes.success) allUsers = usersRes.data;
             if (assignmentsRes.success) currentEventAssignments = assignmentsRes.data;
+
+            // Set defaults if not editing
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('id')) {
+                setFormDefaults();
+            }
+        }
+
+        function setFormDefaults() {
+            if (reasonsSelect) reasonsSelect.value = "Camp Inquiry";
+            if (actionsSelect) actionsSelect.value = "Follow Up";
+            const participantStatusSelect = document.getElementById('participantStatus');
+            if (participantStatusSelect) participantStatusSelect.value = "Getting Information";
+            
+            // Trigger realtime update check
+            updateRealtimeAssignment();
         }
 
         function populateSelect(id, options) {
@@ -568,7 +584,10 @@
         });
 
         document.getElementById('clearBtn').addEventListener('click', () => {
-            if (confirm('Clear form?')) leadForm.reset();
+            if (confirm('Clear form?')) {
+                leadForm.reset();
+                setFormDefaults();
+            }
         });
 
         init();
