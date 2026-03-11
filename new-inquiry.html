@@ -255,9 +255,11 @@
             const group = document.getElementById('primaryEventGroup');
             if (selected.length > 1) {
                 group.style.display = 'flex';
+                primaryEventSelect.setAttribute('required', 'required');
                 updatePrimaryOptions(selected);
             } else {
                 group.style.display = 'none';
+                primaryEventSelect.removeAttribute('required');
                 primaryEventSelect.value = selected[0] || '';
             }
             // Trigger realtime update check

@@ -117,13 +117,22 @@ export const usersService = {
     },
 
     async deleteUser(id) {
-        // Technically we can't delete from auth.users easily, but we can delete the profile
-        // and RLS/Foreign keys will handle the rest if configured.
         try {
+            // 1. Remove event assignments
+            await supabase.from('event_assignments').delete().eq('user_id', id);
+            
+            // 2. Unassign leads (set to NULL)
+            await supabase.from('leads').update({ assigned_to: null }).eq('assigned_to', id);
+            
+            // 3. Cleanup lead requests (set to NULL to keep history but remove association)
+            await supabase.from('lead_requests').update({ requester_id: null }).eq('requester_id', id);
+
+            // 4. Finally delete the profile
             const { error } = await supabase.from('profiles').delete().eq('id', id);
             if (error) throw error;
             return { success: true };
         } catch (error) {
+            console.error("deleteUser failed:", error);
             return { error: error.message, success: false };
         }
     }
