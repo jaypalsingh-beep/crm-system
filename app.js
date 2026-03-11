@@ -145,25 +145,36 @@ if (logoutBtn) {
     });
 }
 
+let isCheckingAuth = false;
+
 async function checkAuth() {
+    if (isCheckingAuth) return;
+    isCheckingAuth = true;
     console.log("Checking auth state...");
-    const { data: user, success } = await authService.getCurrentUser();
     
-    if (success && user) {
-        document.body.classList.add('logged-in');
-        await usersService.ensureProfile(user);
-        currentUser = user;
-        applyPermissions();
+    try {
+        const { data: user, success } = await authService.getCurrentUser();
         
-        logoutBtn.style.display = 'block';
-        await loadInitialData();
-        
-        // Handle Routing
-        handleHashRouting();
-    } else {
-        document.body.classList.remove('logged-in');
-        currentUser = null;
-        showView('login-view', 'Login');
+        if (success && user) {
+            document.body.classList.add('logged-in');
+            await usersService.ensureProfile(user);
+            currentUser = user;
+            applyPermissions();
+            
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            await loadInitialData();
+            
+            // Handle Routing
+            handleHashRouting();
+        } else {
+            document.body.classList.remove('logged-in');
+            currentUser = null;
+            showView('login-view', 'Login');
+        }
+    } catch (err) {
+        console.error("Auth check failed:", err);
+    } finally {
+        isCheckingAuth = false;
     }
 }
 
@@ -171,11 +182,12 @@ function handleHashRouting() {
     const hash = window.location.hash.substring(1);
     const activeView = document.querySelector('.view-section.active');
     
-    if (hash) {
+    if (hash && hash !== 'login-view') {
         const hashPage = hash.split('?')[0];
         
-        // Security Check: Only Admin can see users-view and settings-view
-        if ((hashPage === 'users-view' || hashPage === 'settings-view' || hashPage === 'lead-requests-view') && currentUser.role !== 'Admin') {
+        // Security Check: Only Admin can see sensitive views
+        const adminPages = ['users-view', 'settings-view', 'lead-requests-view'];
+        if (adminPages.includes(hashPage) && currentUser?.role !== 'Admin') {
             console.warn("Unauthorized access attempt to:", hashPage);
             showToast("You don't have permission to access this page.", "error");
             window.location.hash = 'dashboard-view';
@@ -197,9 +209,20 @@ function handleHashRouting() {
         if (hashPage === 'lead-requests-view') renderLeadRequests();
         
         if (window.lucide) lucide.createIcons();
-    } else if (!activeView || activeView.id === 'login-view') {
-        showView('dashboard-view', 'Dashboard');
-        renderDashboard();
+    } else {
+        // Default to dashboard if logged in and no specific hash, otherwise login
+        if (currentUser) {
+            if (window.location.hash !== '#dashboard-view') {
+                window.location.hash = 'dashboard-view';
+            } else {
+                handleHashRouting(); // Recursive call safe here due to hash check
+            }
+            // Actually simpler:
+            showView('dashboard-view', 'Dashboard');
+            renderDashboard();
+        } else {
+            showView('login-view', 'Login');
+        }
     }
 }
 
@@ -208,9 +231,13 @@ window.addEventListener('hashchange', handleHashRouting);
 // Global Auth Listener
 authService.onAuthChange((event, session) => {
     console.log("Auth Event:", event);
-    if (event === 'SIGNED_IN') checkAuth();
+    if (event === 'SIGNED_IN') {
+        checkAuth();
+    }
     if (event === 'SIGNED_OUT') {
         document.body.classList.remove('logged-in');
+        currentUser = null;
+        window.location.hash = 'login-view';
         location.reload();
     }
 });

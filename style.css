@@ -813,6 +813,50 @@ tbody tr:hover td {
     box-shadow: var(--shadow-primary);
 }
 
+/* Radio Group Styles */
+.radio-group-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.radio-item {
+    display: inline-flex;
+}
+
+.radio-item input[type="radio"] {
+    display: none;
+}
+
+.radio-item label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.radio-item input[type="radio"]:checked+label {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+    box-shadow: var(--shadow-primary);
+}
+
+.radio-item label:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
 .check-icon {
     width: 14px;
     height: 14px;
