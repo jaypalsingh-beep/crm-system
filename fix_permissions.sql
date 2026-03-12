@@ -137,6 +137,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 10. Trigger for automatic activity logging on lead creation
+CREATE OR REPLACE FUNCTION public.log_lead_creation()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.lead_activities (lead_id, user_id, activity_type, content)
+    VALUES (NEW.id, NEW.created_by, 'status_change', 'Lead created via New Inquiry form');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_log_lead_creation ON public.leads;
+CREATE TRIGGER tr_log_lead_creation
+AFTER INSERT ON public.leads
+FOR EACH ROW EXECUTE FUNCTION public.log_lead_creation();
+
 -- Re-apply grants at the end
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;

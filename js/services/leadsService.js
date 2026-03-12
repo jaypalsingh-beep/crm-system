@@ -139,13 +139,16 @@ export const leadsService = {
                 created_by: user ? user.id : leadData.created_by 
             };
 
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('leads')
-                .insert([dataToInsert])
-                .select();
-
+                .insert([dataToInsert]);
+            
+            // Note: We avoid .select() here because if RLS policies transfer the lead
+            // away from the creator (e.g. to another event assignment), the .select()
+            // would fail with an RLS error. We return success without the data.
+            
             if (error) throw error;
-            return { data: data[0], success: true };
+            return { success: true };
         } catch (error) {
             return { error: error.message, success: false };
         }
