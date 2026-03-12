@@ -587,12 +587,12 @@
                     result = await leadsService.updateLead(editingId, leadData);
                 } else {
                     result = await leadsService.createLead(leadData);
-                    if (result.success) {
-                        await activitiesService.addActivity(result.data.id, 'status_change', `Lead created via separate page`);
-                    }
                 }
 
                 if (result.success) {
+                    if (result.data) {
+                        await activitiesService.addActivity(result.data.id, 'status_change', `Lead created via separate page`);
+                    }
                     showToast(`Inquiry ${editingId ? 'updated' : 'saved'}!`, "success");
                     setTimeout(() => window.location.href = 'index.html', 1500);
                 } else {

@@ -44,7 +44,7 @@ CREATE POLICY "Only admins can modify form_options" ON form_options
 -- First, ensure created_by has a default value so RLS policies work even if app doesn't send it
 ALTER TABLE public.leads ALTER COLUMN created_by SET DEFAULT auth.uid();
 
--- Drop ANY potential policy that might be blocking inserts
+-- Drop ANY potential policy that might be blocking inserts or causing name conflicts
 DROP POLICY IF EXISTS "Viewing leads based on role" ON leads;
 DROP POLICY IF EXISTS "Inserting leads is allowed for all auth users" ON leads;
 DROP POLICY IF EXISTS "Updating leads based on role" ON leads;
@@ -52,6 +52,7 @@ DROP POLICY IF EXISTS "Deleting leads is for Admins only" ON leads;
 DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON leads;
 DROP POLICY IF EXISTS "Allow authenticated inserts" ON leads;
 DROP POLICY IF EXISTS "Allow all authenticated inserts" ON leads;
+DROP POLICY IF EXISTS "Allow authenticated insert" ON leads;
 
 CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT 
     USING (
@@ -67,7 +68,7 @@ CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT
     );
 
 CREATE POLICY "Inserting leads is allowed for all auth users" ON leads FOR INSERT 
-    WITH CHECK (auth.role() = 'authenticated');
+    WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "Updating leads based on role" ON leads FOR UPDATE 
     USING (
