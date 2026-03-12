@@ -41,8 +41,14 @@ CREATE POLICY "Only admins can modify form_options" ON form_options
     USING (get_my_role() = 'Admin');
 
 -- 4. Update Leads Policies
+-- Ensure the column exists first
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS created_by UUID;
+
 -- First, ensure created_by has a default value so RLS policies work even if app doesn't send it
 ALTER TABLE public.leads ALTER COLUMN created_by SET DEFAULT auth.uid();
+
+-- Ensure travel_date is optional at the database level
+ALTER TABLE public.leads ALTER COLUMN travel_date DROP NOT NULL;
 
 -- Drop ANY potential policy that might be blocking inserts or causing name conflicts
 DROP POLICY IF EXISTS "Viewing leads based on role" ON leads;
