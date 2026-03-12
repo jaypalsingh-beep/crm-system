@@ -62,9 +62,8 @@ DROP POLICY IF EXISTS "Allow authenticated insert" ON leads;
 
 CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT 
     USING (
-        get_my_role() IN ('Admin', 'Manager') OR 
+        get_my_role() = 'Admin' OR 
         assigned_to = auth.uid() OR
-        created_by = auth.uid() OR
         (
             EXISTS (
                 SELECT 1 FROM event_assignments ea 
@@ -79,9 +78,8 @@ CREATE POLICY "Inserting leads is allowed for all auth users" ON leads FOR INSER
 
 CREATE POLICY "Updating leads based on role" ON leads FOR UPDATE 
     USING (
-        get_my_role() IN ('Admin', 'Manager') OR 
-        assigned_to = auth.uid() OR
-        created_by = auth.uid()
+        get_my_role() = 'Admin' OR 
+        assigned_to = auth.uid()
     );
 
 CREATE POLICY "Deleting leads is for Admins only" ON leads FOR DELETE 
