@@ -58,6 +58,7 @@ CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT
     USING (
         get_my_role() IN ('Admin', 'Manager') OR 
         assigned_to = auth.uid() OR
+        created_by = auth.uid() OR
         (
             EXISTS (
                 SELECT 1 FROM event_assignments ea 
@@ -68,12 +69,13 @@ CREATE POLICY "Viewing leads based on role" ON leads FOR SELECT
     );
 
 CREATE POLICY "Inserting leads is allowed for all auth users" ON leads FOR INSERT 
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Updating leads based on role" ON leads FOR UPDATE 
     USING (
         get_my_role() IN ('Admin', 'Manager') OR 
-        assigned_to = auth.uid()
+        assigned_to = auth.uid() OR
+        created_by = auth.uid()
     );
 
 CREATE POLICY "Deleting leads is for Admins only" ON leads FOR DELETE 

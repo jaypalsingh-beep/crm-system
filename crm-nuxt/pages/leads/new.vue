@@ -144,7 +144,7 @@ onMounted(() => {
           </div>
           <div class="form-group" style="margin-top: 1rem;">
             <label>Tentative Travel Date</label>
-            <input v-model="formData.travel_date" type="date" required>
+            <input v-model="formData.travel_date" type="date">
           </div>
         </div>
 

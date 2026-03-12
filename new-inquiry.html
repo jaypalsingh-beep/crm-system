@@ -574,7 +574,7 @@
                     source: document.querySelector('input[name="leadSource"]:checked')?.value || '',
                     events_interested: selectedEvents,
                     primary_event: primaryVal,
-                    travel_date: document.getElementById('travelDate').value,
+                    travel_date: document.getElementById('travelDate').value || null,
                     reasons_to_call: [reasonsSelect.value],
                     status: document.getElementById('participantStatus').value,
                     actions_required: [actionsSelect.value],
